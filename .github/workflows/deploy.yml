@@ -16,4 +16,4 @@ jobs:
         uses: mondaycom/monday-code-deploy-action@v3
         with:
           token: ${{ secrets.MONDAY_TOKEN }}
-          appId: ${{ vars.MONDAY_APP_ID }}
+          versionId: 18187219
