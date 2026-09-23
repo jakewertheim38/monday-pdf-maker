@@ -1,0 +1,19 @@
+name: Deploy to monday code
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # adds a "Run workflow" button on the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to monday code
+        uses: mondaycom/monday-code-deploy-action@v3
+        with:
+          token: ${{ secrets.MONDAY_TOKEN }}
+          appId: ${{ vars.MONDAY_APP_ID }}
