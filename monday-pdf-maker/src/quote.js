@@ -65,9 +65,21 @@ function toProject(cv, linkColumns) {
 
 // Merge column choices from the workflow block over the defaults in config.js.
 // Any input left empty keeps its default.
-function columnMapping(inputs = {}) {
+const MAPPING_KEYS = ['teamColumn', 'quoteTypeColumn', 'quoteDateColumn', 'jobNoColumn', 'versionNoColumn',
+  'descriptionColumn', 'notesColumn', 'subDescriptionColumn', 'budgetTypeColumn', 'spendTypeColumn',
+  'qtyColumn', 'rateColumn', 'spendSummaryColumn', 'projectLinkColumn', 'filesColumn'];
+
+function columnMapping(rawInputs = {}) {
+  // Also accept the column choices grouped inside one Object field (e.g. a "columns" field
+  // whose subfields use the keys above). Top-level fields win if both are set.
+  const inputs = {};
+  Object.values(rawInputs || {}).forEach((v) => {
+    if (v && typeof v === 'object' && !Array.isArray(v) && MAPPING_KEYS.some((k) => k in v)) Object.assign(inputs, v);
+  });
+  Object.assign(inputs, rawInputs);
   const pick = (key, fallback) => {
-    const v = inputs[key];
+    let v = inputs[key];
+    if (Array.isArray(v)) v = v[0]; // a column picker may send a list
     if (v == null || v === '') return fallback;
     if (typeof v === 'object') return String(v.id ?? v.columnId ?? v.value ?? fallback);
     return String(v).trim();
