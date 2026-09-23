@@ -9,7 +9,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
 const { getItem, uploadPdf } = require('./monday');
-const { toQuote } = require('./quote');
+const { toQuote, columnMapping } = require('./quote');
 const { renderPdf, filenameFor } = require('./render');
 
 const app = express();
@@ -41,16 +41,22 @@ function handler(kind) {
     const payload = req.body.payload || {};
     const fields = payload.inboundFieldValues || payload.inputFields || {};
     const itemId = idFrom(fields.itemId ?? fields.item);
-    const columnId = idFrom(fields.columnId ?? fields.column) || config.filesColumnId;
+    const mapping = columnMapping(fields); // column IDs typed into the workflow block, if any
     const apiToken = req.session.shortLivedToken || config.apiToken;
 
     try {
       if (!itemId) throw new Error('No itemId in action input fields');
       if (!apiToken) throw new Error('No API token available');
 
-      const quote = toQuote(await getItem(apiToken, itemId));
+      const raw = await getItem(apiToken, itemId);
+      const quote = toQuote(raw, mapping);
+      // The Files column can be given by title too; uploading needs its real ID.
+      const want = mapping.filesColumn.trim().toLowerCase();
+      const filesCol = raw.column_values.find((c) => c.id === mapping.filesColumn)
+        || raw.column_values.find((c) => c.type === 'file' && c.column && c.column.title.trim().toLowerCase() === want);
+      if (!filesCol) throw new Error(`Files column "${mapping.filesColumn}" not found on this board`);
       const pdf = await renderPdf(kind, quote);
-      const file = await uploadPdf(apiToken, itemId, columnId, filenameFor(kind, quote), pdf);
+      const file = await uploadPdf(apiToken, itemId, filesCol.id, filenameFor(kind, quote), pdf);
 
       console.log(`${kind} PDF created for item ${itemId} (${pdf.length} bytes)`);
       res.status(200).json({ outputFields: { assetId: file && file.id } });

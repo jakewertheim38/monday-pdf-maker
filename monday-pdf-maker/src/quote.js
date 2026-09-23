@@ -3,7 +3,18 @@
 const config = require('./config');
 const { cellText } = require('./monday');
 
-const byId = (cvs) => Object.fromEntries((cvs || []).map((cv) => [cv.id, cv]));
+// Column lookup that accepts either a column ID ("text_mkzz1g43") or a column title ("Job No.").
+const byId = (cvs) => {
+  const map = {};
+  (cvs || []).forEach((cv) => {
+    map[cv.id] = cv;
+    const title = cv.column && cv.column.title;
+    if (title && !(('title:' + title.trim().toLowerCase()) in map)) map['title:' + title.trim().toLowerCase()] = cv;
+  });
+  return new Proxy(map, {
+    get: (m, key) => (typeof key !== 'string' ? undefined : m[key] ?? m['title:' + key.trim().toLowerCase()]),
+  });
+};
 const text = (map, id) => {
   const t = map[id] ? cellText(map[id]) : '';
   return t === '' ? null : t;
@@ -34,9 +45,9 @@ const formatRange = (t) => {
   return b && b !== a ? `${ukDate(a)} – ${ukDate(b)}` : ukDate(a);
 };
 
-function toProject(cv) {
+function toProject(cv, linkColumns) {
   const p = config.project;
-  for (const colId of p.linkColumns) {
+  for (const colId of linkColumns) {
     const linked = cv[colId] && cv[colId].linked_items;
     if (!linked || !linked.length) continue;
     const proj = linked[0];
@@ -52,9 +63,43 @@ function toProject(cv) {
   return null;
 }
 
-function toQuote(raw) {
+// Merge column choices from the workflow block over the defaults in config.js.
+// Any input left empty keeps its default.
+function columnMapping(inputs = {}) {
+  const pick = (key, fallback) => {
+    const v = inputs[key];
+    if (v == null || v === '') return fallback;
+    if (typeof v === 'object') return String(v.id ?? v.columnId ?? v.value ?? fallback);
+    return String(v).trim();
+  };
   const c = config.columns;
   const s = config.subitemColumns;
+  return {
+    columns: {
+      team: pick('teamColumn', c.team),
+      quoteType: pick('quoteTypeColumn', c.quoteType),
+      quoteDate: pick('quoteDateColumn', c.quoteDate),
+      jobNo: pick('jobNoColumn', c.jobNo),
+      versionNo: pick('versionNoColumn', c.versionNo),
+      quoteDescription: pick('descriptionColumn', c.quoteDescription),
+      notes: pick('notesColumn', c.notes),
+    },
+    subitemColumns: {
+      description: pick('subDescriptionColumn', s.description),
+      budgetType: pick('budgetTypeColumn', s.budgetType),
+      spendType: pick('spendTypeColumn', s.spendType),
+      quotedQty: pick('qtyColumn', s.quotedQty),
+      quotedCost: pick('rateColumn', s.quotedCost),
+      spendSummary: pick('spendSummaryColumn', s.spendSummary),
+    },
+    projectLinkColumns: inputs.projectLinkColumn ? [pick('projectLinkColumn')] : config.project.linkColumns,
+    filesColumn: pick('filesColumn', pick('columnId', config.filesColumnId)),
+  };
+}
+
+function toQuote(raw, mapping = columnMapping()) {
+  const c = mapping.columns;
+  const s = mapping.subitemColumns;
   const cv = byId(raw.column_values);
 
   return {
@@ -67,7 +112,7 @@ function toQuote(raw) {
     versionNo: text(cv, c.versionNo),
     quoteDescription: text(cv, c.quoteDescription),
     notes: text(cv, c.notes),
-    project: toProject(cv),
+    project: toProject(cv, mapping.projectLinkColumns),
     subitems: (raw.subitems || []).map((sub) => {
       const scv = byId(sub.column_values);
       return {
@@ -84,4 +129,4 @@ function toQuote(raw) {
   };
 }
 
-module.exports = { toQuote };
+module.exports = { toQuote, columnMapping };
