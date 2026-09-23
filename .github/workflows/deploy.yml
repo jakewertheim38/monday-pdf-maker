@@ -12,8 +12,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to monday code
-        uses: mondaycom/monday-code-deploy-action@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          token: ${{ secrets.MONDAY_TOKEN }}
-          versionId: 18187219
+          node-version: 22
+
+      - name: Install monday CLI
+        run: npm install -g @mondaycom/apps-cli
+
+      - name: Deploy to monday code
+        env:
+          MONDAY_TOKEN: ${{ secrets.MONDAY_TOKEN }}
+        run: |
+          # Keep only the token itself, even if "mapps init -t" or spaces were pasted in with it
+          TOKEN=$(printf '%s' "$MONDAY_TOKEN" | tr -s ' \n\r\t' '\n' | tail -n 1)
+          mapps init -t "$TOKEN"
+          mapps code:push -i 18187219
