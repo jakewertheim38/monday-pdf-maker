@@ -140,7 +140,7 @@
     $('app').innerHTML =
       '<div style="text-align:center;padding:40px 24px">' +
       '<p style="font-size:15px;margin-bottom:20px;color:var(--text)">To generate call sheet PDFs, connect your monday account first.</p>' +
-      '<button class="btn-primary" onclick="startAuth('' + (authUrl || '/oauth/start') + '')" style="font-size:15px;padding:10px 24px">Connect monday account</button>' +
+      '<button class="btn-primary" onclick="startAuth(\'' + (authUrl || \'/oauth/start\') + \'\')" style="font-size:15px;padding:10px 24px">Connect monday account</button>' +
       '</div>';
   }
 
@@ -151,20 +151,28 @@
     }, { once: true });
   }
 
-  async function checkAuth() {
-    try {
-      const token = await sessionToken();
-      const res = await fetch('/api/callsheet/auth-status', { headers: { Authorization: token } });
-      const j = await res.json();
-      if (!j.authorised) { showAuthScreen(j.authUrl); return false; }
-      return true;
-    } catch (_) { return false; }
-  }
-
   // ---------------- Main view ----------------
   async function load() {
-    const authed = await checkAuth();
-    if (!authed) return;
+    // Show Connect button immediately as default while we check auth in background
+    showAuthScreen('https://auth.monday.com/oauth2/authorize?client_id=dacc85f498b5b99ba0798eaad01682cc&redirect_uri=' + encodeURIComponent('https://live1-service-29120331-f5082871.eu.monday.app/oauth/callback'));
+
+    // Now check if they're already authorised
+    try {
+      const token = await Promise.race([
+        sessionToken(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000)),
+      ]);
+      const res = await fetch('/api/callsheet/auth-status', {
+        headers: { Authorization: token },
+        signal: AbortSignal.timeout(8000),
+      });
+      const j = await res.json();
+      if (!j.authorised) return; // already showing Connect button
+      // They're authorised — load the call sheet
+    } catch (_) {
+      return; // already showing Connect button
+    }
+
     try {
       const res = await api('/api/callsheet/item?itemId=' + state.itemId + '&boardId=' + state.boardId);
       state.data = await res.json();
