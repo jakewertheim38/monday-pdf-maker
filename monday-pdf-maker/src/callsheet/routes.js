@@ -7,6 +7,7 @@ const { FIELDS, KINDS, DOCS } = require('./fields');
 const { getMapping, saveMapping } = require('./store');
 const { buildPdf, saveColumnFor, DOC_KINDS } = require('./service');
 const { toCallSheetItem } = require('./normalize');
+const { getUserToken, saveUserToken, exchangeCode, userIdFromSession } = require('../oauth');
 
 // Make one PDF and attach it to the item's Files column.
 async function makeAndSave(token, itemId, kind, boardIdHint, workflowInputs = {}) {
@@ -21,20 +22,35 @@ async function makeAndSave(token, itemId, kind, boardIdHint, workflowInputs = {}
 }
 
 // ---------- Item view auth: monday session token, signed with the app's Client Secret ----------
-function verifySession(req, res, next) {
+async function verifySession(req, res, next) {
   try {
     const secret = getSetting('MONDAY_CLIENT_SECRET');
     if (!secret) throw new Error('MONDAY_CLIENT_SECRET is not set');
     const token = req.headers.authorization;
     if (!token) throw new Error('missing session token');
     req.session = jwt.verify(token, secret);
-    req.apiToken = getSetting('MONDAY_API_TOKEN');
-    if (!req.apiToken) throw new Error('MONDAY_API_TOKEN is not set');
+    const userId = userIdFromSession(req.session);
+    if (!userId) throw new Error('No user ID in session');
+    const oauthToken = await getUserToken(userId);
+    if (!oauthToken) {
+      // Tell the view the user needs to authorise
+      res.status(401).json({ needsAuth: true, authUrl: buildAuthUrl() });
+      return;
+    }
+    req.apiToken = oauthToken;
     next();
   } catch (err) {
     console.error('Item view auth failed:', err.message);
     res.status(401).json({ error: err.message });
   }
+}
+
+function buildAuthUrl() {
+  const clientId = getSetting('MONDAY_CLIENT_ID');
+  const redirectUri = getSetting('MONDAY_OAUTH_REDIRECT_URI');
+  if (!clientId) return null;
+  const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri || '' });
+  return `https://auth.monday.com/oauth2/authorize?${params}`;
 }
 const canEdit = (session) => {
   const d = (session && session.dat) || {};
@@ -92,6 +108,58 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
   app.post('/action/production-roles-pdf', verifyMonday, action(['productionRoles']));
   // Full production document pack (all four pages in one go)
   app.post('/action/production-pack', verifyMonday, action(['productionCover', 'productionCallSheet', 'productionSchedule', 'productionRoles']));
+
+  // ---------- OAuth ----------
+  // Redirect the user to monday's OAuth page
+  app.get('/oauth/start', (_req, res) => {
+    const url = buildAuthUrl();
+    if (!url) return res.status(500).send('MONDAY_CLIENT_ID is not set');
+    res.redirect(url);
+  });
+
+  // monday redirects back here with ?code=... after the user authorises
+  app.get('/oauth/callback', async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      if (!code) throw new Error('No code in callback');
+      const accessToken = await exchangeCode(code);
+      // Find out which user this token belongs to
+      const meRes = await fetch('https://api.monday.com/v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: accessToken, 'API-Version': '2026-01' },
+        body: JSON.stringify({ query: '{ me { id name } }' }),
+      });
+      const meJson = await meRes.json();
+      const me = meJson.data && meJson.data.me;
+      if (!me) throw new Error('Could not get user info from monday');
+      await saveUserToken(String(me.id), accessToken);
+      console.log(`OAuth: saved token for user ${me.id} (${me.name})`);
+      // Close the popup and tell the item view to reload
+      res.send(`<html><body><script>
+        if (window.opener) { window.opener.postMessage('oauth_complete', '*'); window.close(); }
+        else { document.body.innerText = 'Authorised! You can close this tab.'; }
+      </script></body></html>`);
+    } catch (err) {
+      console.error('OAuth callback failed:', err.message);
+      res.status(400).send('Authorisation failed: ' + err.message);
+    }
+  });
+
+  // Check whether the current user has authorised (used by the view on load)
+  app.get('/api/callsheet/auth-status', async (req, res) => {
+    try {
+      const secret = getSetting('MONDAY_CLIENT_SECRET');
+      if (!secret) return res.json({ authorised: false, authUrl: buildAuthUrl() });
+      const token = req.headers.authorization;
+      if (!token) return res.json({ authorised: false, authUrl: buildAuthUrl() });
+      const session = jwt.verify(token, secret);
+      const userId = userIdFromSession(session);
+      const oauthToken = userId ? await getUserToken(userId) : null;
+      res.json({ authorised: !!oauthToken, authUrl: oauthToken ? null : buildAuthUrl() });
+    } catch (err) {
+      res.json({ authorised: false, authUrl: buildAuthUrl() });
+    }
+  });
 
   // ---------- Item view page ----------
   app.get('/views/callsheet', (_req, res) => res.sendFile(path.join(__dirname, '..', '..', 'views', 'callsheet.html')));
