@@ -4,353 +4,85 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Call Sheet</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/monday-sdk-js@0.5.5/dist/main.js"></script>
 <style>
-  :root {
-    --bg: #ffffff; --panel: #f6f7fb; --text: #323338; --muted: #676879; --border: #d0d4e4;
-    --primary: #0073ea; --primary-hover: #0060b9; --teal: #003942; --ok: #00854d; --err: #d83a52;
-    --chip: #e6f4ea; --chip-text: #166534; --shadow: 0 6px 20px rgba(0,0,0,.12);
-  }
-  body.dark { --bg: #181b34; --panel: #22264a; --text: #d5d8df; --muted: #9699a6; --border: #3b3f63; --chip: #1f3b2c; --chip-text: #8ee4b0; --shadow: 0 6px 20px rgba(0,0,0,.45); }
-  body.black { --bg: #111111; --panel: #1c1c1c; --text: #eeeeee; --muted: #a0a0a0; --border: #3a3a3a; --chip: #1f3b2c; --chip-text: #8ee4b0; --shadow: 0 6px 20px rgba(0,0,0,.6); }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: Figtree, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
-  .wrap { padding: 20px 24px 40px; max-width: 980px; margin: 0 auto; }
-  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .chip { background: var(--chip); color: var(--chip-text); border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
-  button { font-family: inherit; font-size: 14px; cursor: pointer; border-radius: 6px; border: 1px solid transparent; padding: 7px 14px; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
-  .btn-secondary:hover:not(:disabled) { background: var(--panel); }
-  .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 7px 10px; display: flex; align-items: center; gap: 6px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 20px; }
-  .card { background: var(--panel); border-radius: 8px; padding: 10px 12px; min-width: 0; }
-  .card .label { color: var(--muted); font-size: 12px; margin-bottom: 3px; }
-  .card .value { font-weight: 600; overflow-wrap: anywhere; }
-  h2 { font-size: 15px; margin: 22px 0 10px; }
-  .docs { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .doc { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .doc:first-child { border-top: 0; }
-  .doc .name { font-weight: 600; }
-  .doc .note { color: var(--muted); font-size: 12px; }
-  .doc .actions { display: flex; gap: 8px; }
-  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--border); white-space: nowrap; }
-  th { background: var(--panel); border-top: 0; color: var(--muted); font-weight: 600; }
-  .empty { color: var(--muted); padding: 30px; text-align: center; }
-  .error { background: #fde8ec; color: #9b1c31; padding: 12px 14px; border-radius: 8px; }
-  body.dark .error, body.black .error { background: #4a1d27; color: #ffc2cc; }
-  /* Settings drawer */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 10; }
-  .overlay.open { display: block; }
-  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: var(--bg); box-shadow: var(--shadow); z-index: 11; transform: translateX(100%); transition: transform .2s ease; display: flex; flex-direction: column; }
-  .drawer.open { transform: none; }
-  .drawer-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .drawer-head h3 { margin: 0; font-size: 17px; }
-  .drawer-body { padding: 8px 20px 20px; overflow-y: auto; flex: 1; }
-  .drawer-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: space-between; }
-  .group-title { font-weight: 700; margin: 18px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  .field { display: grid; grid-template-columns: 1fr 1.3fr; gap: 10px; align-items: center; margin-bottom: 8px; }
-  .field label { font-size: 13px; }
-  .field .hint { display: block; color: var(--muted); font-size: 11px; }
-  select { width: 100%; font-family: inherit; font-size: 13px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-  .intro { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
-  /* Toast */
-  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #323338; color: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: var(--shadow); display: none; z-index: 20; max-width: 90%; }
-  .toast.show { display: block; }
-  .toast.ok { background: var(--ok); } .toast.err { background: var(--err); }
-  .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; margin: 60px auto 12px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  body { font-family: sans-serif; padding: 20px; }
+  .step { margin: 10px 0; padding: 8px 12px; border-radius: 6px; background: #f0f0f0; }
+  .ok { background: #e6f4ea; color: #166534; }
+  .err { background: #fde8ec; color: #9b1c31; }
+  button { font-family: inherit; font-size: 14px; padding: 10px 20px; background: #0073ea; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 12px; }
 </style>
 </head>
 <body>
-<div class="wrap" id="app"><div class="spinner"></div><p class="empty" style="padding:0">Loading call sheet…</p></div>
+<h2>Call Sheet — Diagnostics</h2>
+<div id="steps"></div>
 
-<div class="overlay" id="overlay"></div>
-<aside class="drawer" id="drawer" aria-label="Column settings">
-  <div class="drawer-head">
-    <h3>Column settings</h3>
-    <button class="icon-btn" id="closeSettings" aria-label="Close">✕</button>
-  </div>
-  <div class="drawer-body" id="settingsBody"></div>
-  <div class="drawer-foot">
-    <button class="btn-secondary" id="resetSettings">Reset to defaults</button>
-    <div style="display:flex;gap:8px">
-      <button class="btn-secondary" id="cancelSettings">Cancel</button>
-      <button class="btn-primary" id="saveSettings">Save</button>
-    </div>
-  </div>
-</aside>
-<div class="toast" id="toast"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/monday-sdk-js@0.5.5/dist/main.js"></script>
 <script>
-(function () {
-  const monday = window.mondaySdk ? window.mondaySdk() : null;
-  const state = { itemId: null, boardId: null, data: null, settings: null };
-  const $ = (id) => document.getElementById(id);
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const pad = (n) => String(n).padStart(2, '0');
-  const time = (t) => (t && t.hour != null ? pad(t.hour) + ':' + pad(t.minute || 0) : '—');
-  const date = (d) => {
-    const v = d && (d.from || d.to);
-    if (!v) return '—';
-    return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(v + 'T12:00:00'));
-  };
+const steps = document.getElementById('steps');
+function log(msg, ok) {
+  const d = document.createElement('div');
+  d.className = 'step ' + (ok === true ? 'ok' : ok === false ? 'err' : '');
+  d.textContent = msg;
+  steps.appendChild(d);
+}
 
-  function toast(msg, kind) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.className = 'toast show ' + (kind || '');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => (t.className = 'toast'), kind === 'err' ? 6000 : 3000);
-  }
+log('Page loaded');
 
-  async function sessionToken() {
-    const res = await monday.get('sessionToken');
-    return res.data;
-  }
+// Step 1: SDK available?
+if (window.mondaySdk) {
+  log('monday SDK loaded ✓', true);
+} else {
+  log('monday SDK NOT loaded ✗', false);
+}
 
-  async function api(path, options = {}) {
-    const token = await sessionToken();
-    const res = await fetch(path, {
-      ...options,
-      headers: { 'Content-Type': 'application/json', Authorization: token, ...(options.headers || {}) },
-    });
-    if (res.status === 401) {
-      const j = await res.clone().json().catch(() => ({}));
-      if (j.needsAuth) { showAuthScreen(j.authUrl); throw new Error('needs_auth'); }
-    }
-    if (!res.ok) {
-      let msg = 'Something went wrong (' + res.status + ')';
-      try { msg = (await res.json()).error || msg; } catch (_) {}
-      throw new Error(msg);
-    }
-    return res;
-  }
+// Step 2: Init SDK
+let monday = null;
+try {
+  monday = window.mondaySdk();
+  log('monday SDK initialised ✓', true);
+} catch(e) {
+  log('SDK init failed: ' + e.message, false);
+}
 
-  // ---------------- OAuth ----------------
-  function showAuthScreen(authUrl) {
-    $('app').innerHTML =
-      '<div style="text-align:center;padding:40px 24px">' +
-      '<p style="font-size:15px;margin-bottom:20px;color:var(--text)">To generate call sheet PDFs, connect your monday account first.</p>' +
-      '<button class="btn-primary" onclick="startAuth('' + (authUrl || '/oauth/start') + '')" style="font-size:15px;padding:10px 24px">Connect monday account</button>' +
-      '</div>';
-  }
-
-  function startAuth(url) {
-    const popup = window.open(url, 'monday-oauth', 'width=600,height=700');
-    window.addEventListener('message', (e) => {
-      if (e.data === 'oauth_complete') { popup && popup.close(); load(); }
-    }, { once: true });
-  }
-
-  async function checkAuth() {
-    try {
-      // Give the monday SDK up to 5 seconds to provide a session token
-      const token = await Promise.race([
-        sessionToken(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000)),
-      ]);
-      const res = await fetch('/api/callsheet/auth-status', {
-        headers: { Authorization: token },
-        signal: AbortSignal.timeout(8000),
-      });
-      const j = await res.json();
-      if (!j.authorised) { showAuthScreen(j.authUrl); return false; }
-      return true;
-    } catch (err) {
-      // If we can't get a token, show the auth screen anyway
-      showAuthScreen(null);
-      return false;
-    }
-  }
-
-  // ---------------- Main view ----------------
-  async function load() {
-    $('app').innerHTML = '<div class="spinner"></div><p class="empty" style="padding:0">Checking authorisation…</p>';
-    const authed = await checkAuth();
-    if (!authed) return;
-    try {
-      const res = await api('/api/callsheet/item?itemId=' + state.itemId + '&boardId=' + state.boardId);
-      state.data = await res.json();
-      if (state.data.boardId) state.boardId = state.data.boardId;
-      render();
-    } catch (err) {
-      if (err.message === 'needs_auth') return;
-      $('app').innerHTML = '<div class="error"><strong>Couldn\'t load the call sheet.</strong><br>' + esc(err.message) + '</div>';
-    }
-  }
-
-  function render() {
-    const d = state.data;
-    const it = d.item;
-    const docNotes = {
-      callSheet: d.counts.crew + ' crew · ' + d.counts.talent + ' talent',
-      schedule: d.counts.schedule + ' scene' + (d.counts.schedule === 1 ? '' : 's'),
-      roles: d.counts.roles + ' with a responsibility',
-      productionDoc: 'Call sheet, schedule and roles in one PDF',
-    };
-    const card = (label, value) => '<div class="card"><div class="label">' + esc(label) + '</div><div class="value">' + esc(value || '—') + '</div></div>';
-
-    $('app').innerHTML =
-      '<header><div><h1>' + esc(it.name) + '</h1><div class="sub">' +
-        (it.productionId ? '<span class="chip">' + esc(it.productionId) + '</span>' : '') +
-        '<span>' + esc(date(it.shootDate)) + '</span></div></div>' +
-        '<button class="icon-btn" id="openSettings" title="Column settings">⚙️ Settings</button></header>' +
-      '<div class="grid">' +
-        card('Producer', it.producer) + card('Project Manager', it.projectManager) +
-        card('Shoot Location', it.location) +
-        card('Crew Call', time(it.crewCallTime)) + card('Talent Call', time(it.talentCallTime)) +
-      '</div>' +
-      '<h2>Documents</h2><div class="docs">' +
-        d.docs.map((doc) =>
-          '<div class="doc"><div><div class="name">' + esc(doc.label) + '</div><div class="note">' + esc(docNotes[doc.kind] || '') +
-          (d.saveTo[doc.kind] ? '' : ' · <em>no Files column set, so it can\'t be saved</em>') + '</div></div>' +
-          '<div class="actions">' +
-            '<button class="btn-secondary" data-kind="' + doc.kind + '" data-save="0">Download</button>' +
-            '<button class="btn-primary" data-kind="' + doc.kind + '" data-save="1"' + (d.saveTo[doc.kind] && d.canEdit ? '' : ' disabled') + '>Save to item</button>' +
-          '</div></div>').join('') +
-      '</div>' +
-      '<h2>Crew &amp; talent</h2>' +
-      (d.crew.length
-        ? '<div class="table-wrap"><table><thead><tr><th>Type</th><th>Name</th><th>Position</th><th>Call Time</th></tr></thead><tbody>' +
-          d.crew.map((c) => '<tr><td>' + esc(c.kind) + '</td><td>' + esc(c.name) + '</td><td>' + esc(c.position || '—') + '</td><td>' + esc(time(c.callTime)) + '</td></tr>').join('') +
-          '</tbody></table></div>'
-        : '<div class="empty">No crew or talent found. Check the Crew / Talent column in ⚙️ Settings.</div>');
-
-    $('openSettings').onclick = openSettings;
-    document.querySelectorAll('.doc button').forEach((b) => (b.onclick = () => makePdf(b)));
-  }
-
-  async function makePdf(button) {
-    const kind = button.dataset.kind;
-    const save = button.dataset.save === '1';
-    const original = button.textContent;
-    button.disabled = true;
-    button.textContent = save ? 'Saving…' : 'Creating…';
-    try {
-      const res = await api('/api/callsheet/pdf', { method: 'POST', body: JSON.stringify({ itemId: state.itemId, kind, save }) });
-      if (save) {
-        const out = await res.json();
-        toast('Saved "' + out.filename + '" to the item', 'ok');
-      } else {
-        const blob = await res.blob();
-        const name = decodeURIComponent(res.headers.get('X-Filename') || 'callsheet.pdf');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      }
-    } catch (err) {
-      toast(err.message, 'err');
-    } finally {
-      button.disabled = false;
-      button.textContent = original;
-    }
-  }
-
-  // ---------------- Settings ----------------
-  async function openSettings() {
-    $('settingsBody').innerHTML = '<div class="spinner"></div>';
-    $('overlay').classList.add('open');
-    $('drawer').classList.add('open');
-    try {
-      const res = await api('/api/callsheet/settings?boardId=' + state.boardId);
-      state.settings = await res.json();
-      renderSettings(state.settings.current);
-    } catch (err) {
-      $('settingsBody').innerHTML = '<div class="error" style="margin-top:12px">' + esc(err.message) + '</div>';
-    }
-  }
-
-  function renderSettings(values) {
-    const s = state.settings;
-    const groups = [];
-    s.fields.forEach((f) => {
-      let g = groups.find((x) => x.name === f.group);
-      if (!g) groups.push((g = { name: f.group, fields: [] }));
-      g.fields.push(f);
-    });
-    const options = (f) => {
-      const cols = f.level === 'subitem' ? s.subitemColumns : s.columns;
-      const current = values[f.key] || '';
-      const fits = cols.filter((c) => f.types.includes(c.type) || c.id === current);
-      return '<option value="">— Not used —</option>' +
-        fits.map((c) => '<option value="' + esc(c.id) + '"' + (c.id === current ? ' selected' : '') + '>' + esc(c.title) + '</option>').join('');
-    };
-    $('settingsBody').innerHTML =
-      '<p class="intro">Choose which column on <strong>' + esc(s.boardName) + '</strong> fills each part of the PDFs. ' +
-      'Settings are saved for this board and also used by the workflow blocks.</p>' +
-      groups.map((g) => '<div class="group-title">' + esc(g.name) + '</div>' +
-        g.fields.map((f) => '<div class="field"><label for="f_' + f.key + '">' + esc(f.label) +
-          (f.hint ? '<span class="hint">' + esc(f.hint) + '</span>' : '') + '</label>' +
-          '<select id="f_' + f.key + '" data-key="' + f.key + '"' + (s.canEdit ? '' : ' disabled') + '>' + options(f) + '</select></div>').join('')
-      ).join('');
-    $('saveSettings').disabled = !s.canEdit;
-    $('resetSettings').disabled = !s.canEdit;
-  }
-
-  function closeSettings() {
-    $('overlay').classList.remove('open');
-    $('drawer').classList.remove('open');
-  }
-
-  async function saveSettings(mapping, message) {
-    const btn = $('saveSettings');
-    btn.disabled = true;
-    try {
-      await api('/api/callsheet/settings', { method: 'POST', body: JSON.stringify({ boardId: state.boardId, mapping }) });
-      toast(message, 'ok');
-      closeSettings();
-      load();
-    } catch (err) {
-      toast(err.message, 'err');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  $('saveSettings').onclick = () => {
-    const mapping = {};
-    document.querySelectorAll('#settingsBody select').forEach((sel) => (mapping[sel.dataset.key] = sel.value));
-    saveSettings(mapping, 'Settings saved');
-  };
-  $('resetSettings').onclick = () => {
-    if (confirm('Reset every column back to the default?')) saveSettings({}, 'Settings reset to defaults');
-  };
-  $('cancelSettings').onclick = closeSettings;
-  $('closeSettings').onclick = closeSettings;
-  $('overlay').onclick = closeSettings;
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSettings(); });
-
-  // ---------------- Start ----------------
-  if (!monday) {
-    $('app').innerHTML = '<div class="error">This page only works inside monday.com as an item view.</div>';
-    return;
-  }
-  let started = false;
+// Step 3: Get context
+if (monday) {
+  log('Requesting context...');
   monday.listen('context', (res) => {
-    const ctx = res.data || {};
-    document.body.className = ctx.theme === 'dark' ? 'dark' : ctx.theme === 'black' ? 'black' : '';
-    const itemId = ctx.itemId || (ctx.itemIds && ctx.itemIds[0]);
-    if (!itemId) return;
-    const changed = String(itemId) !== String(state.itemId);
-    state.itemId = itemId;
-    state.boardId = ctx.boardId || (ctx.boardIds && ctx.boardIds[0]);
-    if (!started || changed) { started = true; load(); }
+    log('Context received: itemId=' + (res.data && res.data.itemId), true);
   });
   setTimeout(() => {
-    if (!started) $('app').innerHTML = '<div class="error">Couldn\'t get the item from monday. Open this from an item\'s view tab.</div>';
+    const existing = steps.querySelectorAll('.ok');
+    if (existing.length < 3) log('Context timeout after 5s — not inside a monday item view', false);
+  }, 5000);
+}
+
+// Step 4: Get session token
+if (monday) {
+  log('Requesting session token...');
+  monday.get('sessionToken').then(res => {
+    log('Session token received: ' + (res.data ? res.data.slice(0,20) + '...' : 'empty'), !!res.data);
+  }).catch(e => {
+    log('Session token failed: ' + e.message, false);
+  });
+  setTimeout(() => {
+    log('Session token timeout after 8s', false);
   }, 8000);
-})();
+}
+
+// Step 5: Fetch auth-status
+log('Fetching auth-status from server...');
+fetch('https://live1-service-29120331-f5082871.eu.monday.app/api/callsheet/auth-status')
+  .then(r => r.json())
+  .then(j => log('Auth status: authorised=' + j.authorised, j.authorised))
+  .catch(e => log('Auth status fetch failed: ' + e.message, false));
+
+// Manual connect button
+const btn = document.createElement('button');
+btn.textContent = 'Connect monday account (manual)';
+btn.onclick = () => {
+  window.open('https://auth.monday.com/oauth2/authorize?client_id=dacc85f498b5b99ba0798eaad01682cc&redirect_uri=' + encodeURIComponent('https://live1-service-29120331-f5082871.eu.monday.app/oauth/callback'), 'oauth', 'width=600,height=700');
+};
+document.body.appendChild(btn);
 </script>
 </body>
 </html>
