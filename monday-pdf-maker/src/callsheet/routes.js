@@ -47,9 +47,11 @@ async function verifySession(req, res, next) {
 
 function buildAuthUrl() {
   const clientId = getSetting('MONDAY_CLIENT_ID');
-  const redirectUri = getSetting('MONDAY_OAUTH_REDIRECT_URI');
   if (!clientId) return null;
-  const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri || '' });
+  // Use the secret if set, otherwise fall back to the live URL
+  const redirectUri = getSetting('MONDAY_OAUTH_REDIRECT_URI') ||
+    'https://live1-service-29120331-f5082871.eu.monday.app/oauth/callback';
+  const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri });
   return `https://auth.monday.com/oauth2/authorize?${params}`;
 }
 const canEdit = (session) => {
