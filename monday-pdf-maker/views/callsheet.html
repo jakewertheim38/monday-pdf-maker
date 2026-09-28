@@ -153,16 +153,28 @@
 
   async function checkAuth() {
     try {
-      const token = await sessionToken();
-      const res = await fetch('/api/callsheet/auth-status', { headers: { Authorization: token } });
+      // Give the monday SDK up to 5 seconds to provide a session token
+      const token = await Promise.race([
+        sessionToken(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000)),
+      ]);
+      const res = await fetch('/api/callsheet/auth-status', {
+        headers: { Authorization: token },
+        signal: AbortSignal.timeout(8000),
+      });
       const j = await res.json();
       if (!j.authorised) { showAuthScreen(j.authUrl); return false; }
       return true;
-    } catch (_) { return false; }
+    } catch (err) {
+      // If we can't get a token, show the auth screen anyway
+      showAuthScreen(null);
+      return false;
+    }
   }
 
   // ---------------- Main view ----------------
   async function load() {
+    $('app').innerHTML = '<div class="spinner"></div><p class="empty" style="padding:0">Checking authorisation…</p>';
     const authed = await checkAuth();
     if (!authed) return;
     try {
