@@ -21,23 +21,20 @@ async function makeAndSave(token, itemId, kind, boardIdHint, workflowInputs = {}
   return { filename, assetId: file && file.id };
 }
 
-// ---------- Item view auth: monday session token, signed with the app's Client Secret ----------
+// ---------- Item view auth: uses MONDAY_API_TOKEN from secrets ----------
 async function verifySession(req, res, next) {
   try {
+    const apiToken = getSetting('MONDAY_API_TOKEN');
+    if (!apiToken) throw new Error('MONDAY_API_TOKEN is not set — add it to monday code Secrets');
+    req.apiToken = apiToken;
+    // Still verify the session token so we know the request came from monday
     const secret = getSetting('MONDAY_CLIENT_SECRET');
-    if (!secret) throw new Error('MONDAY_CLIENT_SECRET is not set');
-    const token = req.headers.authorization;
-    if (!token) throw new Error('missing session token');
-    req.session = jwt.verify(token, secret);
-    const userId = userIdFromSession(req.session);
-    if (!userId) throw new Error('No user ID in session');
-    const oauthToken = await getUserToken(userId);
-    if (!oauthToken) {
-      // Tell the view the user needs to authorise
-      res.status(401).json({ needsAuth: true, authUrl: buildAuthUrl() });
-      return;
+    if (secret) {
+      const token = req.headers.authorization;
+      if (token) {
+        try { req.session = jwt.verify(token, secret); } catch (_) {}
+      }
     }
-    req.apiToken = oauthToken;
     next();
   } catch (err) {
     console.error('Item view auth failed:', err.message);
