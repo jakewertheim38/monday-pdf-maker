@@ -1,48 +1,27 @@
-name: Deploy to monday code
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch: # adds a "Run workflow" button on the Actions tab
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install monday CLI
-        run: npm install -g @mondaycom/apps-cli
-
       - name: Deploy to monday code
         env:
           MONDAY_TOKEN: ${{ secrets.MONDAY_TOKEN }}
         run: |
-          # Keep only the token itself, even if "mapps init -t" or spaces were pasted in with it
           TOKEN=$(printf '%s' "$MONDAY_TOKEN" | tr -s ' \n\r\t' '\n' | tail -n 1)
           mapps init -t "$TOKEN"
 
-          # Find the app's package.json, even if the project was uploaded inside a subfolder
           PKG=$(find . -name package.json -not -path '*/node_modules/*' -not -path './.git/*' | head -n 1)
           if [ -z "$PKG" ]; then
-            echo "::error::package.json was not found in the repository. Files uploaded:"
-            find . -not -path './.git/*' -maxdepth 3
+            echo "::error::package.json not found"
             exit 1
           fi
           APP_DIR=$(dirname "$PKG")
           echo "Deploying from: $APP_DIR"
 
-          # Look up the latest draft version ID automatically using the app ID
-          VERSION_ID=$(mapps app-version:list -i 12222663 2>/dev/null | grep -i draft | grep -oE '[0-9]{6,}' | tail -1)
+          # List versions and show raw output so we can see the format
+          echo "=== Version list ==="
+          mapps app-version:list -i 12222663 2>&1 || true
+          echo "=== End version list ==="
+
+          VERSION_ID=$(mapps app-version:list -i 12222663 2>/dev/null | grep -i "draft" | grep -oE '\b[0-9]{7,9}\b' | grep -v '^12222663$' | tail -1)
           if [ -z "$VERSION_ID" ]; then
-            echo "::error::No draft version found for app 12222663. Create a new draft version in the Developer Center."
+            echo "::error::No draft version found. Create a new draft version in the Developer Center."
             exit 1
           fi
           echo "Deploying to version: $VERSION_ID"
-          mapps
+          mapps code:push -i "$VERSION_ID" -d "$APP_DIR"
