@@ -1,4 +1,13 @@
-# monday PDF maker: Production Quotes
+# monday PDF maker
+
+Two sets of PDFs, one app:
+- **Production Quotes**: Quote and Spend Summary (workflow blocks)
+- **Call Sheets**: Call Sheet, Schedule, Roles & Responsibilities and Production Document
+  (workflow blocks **and** an item view with column settings); see "Call sheets" below
+
+---
+
+# Production Quotes
 
 This app generates the **Production & Planning Quote** and **Spend Summary** PDFs from your
 Vibe app. It runs on the server as a monday automation, so there's no watermark and nobody
@@ -24,6 +33,22 @@ name, plus the Project ID, Shoot Date and Campaign Owner from the **Project Boar
 
 If you duplicate the board, override any of these with env vars. The variable names are in `src/config.js`.
 
+## Choosing columns per board (optional workflow inputs)
+
+Add any of these as **Text** input fields on the blocks. Type a column **ID** or its exact **title**.
+Anything left empty uses the Production Quotes 26 defaults.
+
+| Field key | PDF field | | Field key | PDF field |
+|---|---|---|---|---|
+| `jobNoColumn` | Job# | | `subDescriptionColumn` | Line description |
+| `quoteTypeColumn` | Title | | `budgetTypeColumn` | Budget Pot / grouping |
+| `quoteDateColumn` | Quote Date | | `spendTypeColumn` | Spend Type grouping |
+| `versionNoColumn` | Version # | | `qtyColumn` | Qty |
+| `descriptionColumn` | Description | | `rateColumn` | Rate |
+| `notesColumn` | Notes | | `spendSummaryColumn` | Spend summary |
+| `teamColumn` | Team Owner | | `projectLinkColumn` | Project link |
+| `filesColumn` | Where the PDF goes | | | |
+
 ## Try it locally
 
 ```bash
@@ -31,6 +56,14 @@ npm install
 npm run demo                                          # sample PROD-025 data (add --no-project to hide the project block)
 MONDAY_API_TOKEN=your_token npm run preview -- 3225120381   # a real item
 ```
+
+## Deploying without Terminal (GitHub)
+
+`.github/workflows/deploy.yml` deploys the app to monday code from GitHub's servers every time
+you change a file on the `main` branch, or when you press **Run workflow** on the Actions tab.
+It needs, in the repo's **Settings → Secrets and variables → Actions**:
+- Secret `MONDAY_TOKEN`: your developer token (Developer Center → My access tokens)
+- Variable `MONDAY_APP_ID`: your app's ID (shown in the Developer Center)
 
 ## Set up in monday (as workflow blocks)
 
@@ -67,3 +100,49 @@ MONDAY_API_TOKEN=your_token npm run preview -- 3225120381   # a real item
 - `src/quote.js`: maps monday columns to the fields the templates use.
 - `src/config.js`: column IDs, company details, default notes.
 - `assets/logo.png`: the Myprotein logo, bundled so nothing is downloaded at run time.
+
+
+---
+
+# Call sheets
+
+The four PDFs from the old Vibe call sheet app, with the same layouts (ported from its code).
+Defaults are the columns on **Production Files** (5091973337) and its subitems.
+
+## Settings needed in monday code (Environment variables or Secrets)
+
+| Key | What it is |
+|---|---|
+| `MONDAY_SIGNING_SECRET` | Already set: used by the workflow blocks |
+| `MONDAY_CLIENT_SECRET` | Basic information → App credentials → **Client Secret**. The item view uses it to confirm requests come from monday |
+| `MONDAY_API_TOKEN` | Your developer token (My access tokens). The item view uses it to read items and save PDFs, so saved files show as uploaded by you |
+
+## Item view
+
+Developer Center → Features → Create feature → **Item view**. Point it at a custom URL:
+`<your monday code URL>/views/callsheet`
+
+The view shows the shoot summary, crew and talent, and a **Download** and **Save to item** button for each PDF.
+**⚙️ Settings** lets you pick which column fills each part of the PDFs. It's saved per board and also used by the
+workflow blocks. Fields left on the default use the Production Files column, or a column with the same name.
+
+## Workflow blocks
+
+Each needs the same inputs as the quote blocks: `boardId` (Board) and `itemId` (Item, main field, depends on boardId).
+
+| Block | Execution URL ending |
+|---|---|
+| Create call sheet PDF | `/action/callsheet-pdf` |
+| Create schedule PDF | `/action/schedule-pdf` |
+| Create roles & responsibilities PDF | `/action/roles-pdf` |
+| Create production document PDF | `/action/production-doc-pdf` |
+| Create call sheet pack (call sheet + schedule + R&Rs) | `/action/callsheet-pack` |
+
+Column choices come from the item view's settings, so the blocks need no column inputs.
+
+## Try it locally
+
+```bash
+npm run callsheet-demo                                        # sample data
+MONDAY_API_TOKEN=your_token node scripts/callsheet-demo.js 3192237188   # a real item
+```

@@ -89,6 +89,34 @@ function build(columnValues, level, mapping) {
   return { values: out, used };
 }
 
+// Merge workflow block inputs (column IDs chosen in the Workflow Builder) into the mapping.
+// Workflow inputs use the field key + "Column" (e.g. shootDateColumn, crewTalentColumn).
+// These take priority over the saved item view settings.
+function mergeWorkflowInputs(mapping, inputs = {}) {
+  const out = Object.assign({}, mapping);
+  const { FIELDS } = require('./fields');
+  FIELDS.filter((f) => !f.key.endsWith('File')).forEach((f) => {
+    const inputKey = f.key + 'Column';
+    const v = inputs[inputKey];
+    if (v == null || v === '') return;
+    // monday sends a column picker value as a plain ID string, or as {id, title} or [id]
+    let id = v;
+    if (Array.isArray(v)) id = v[0];
+    if (typeof id === 'object') id = id.id ?? id.columnId ?? id.value ?? null;
+    if (id) out[f.key] = String(id).trim();
+  });
+  // File columns use the key directly (e.g. callSheetFile)
+  FIELDS.filter((f) => f.key.endsWith('File')).forEach((f) => {
+    const v = inputs[f.key];
+    if (v == null || v === '') return;
+    let id = v;
+    if (Array.isArray(id)) id = id[0];
+    if (typeof id === 'object') id = id.id ?? id.columnId ?? id.value ?? null;
+    if (id) out[f.key] = String(id).trim();
+  });
+  return out;
+}
+
 // raw: item from monday.getItem(); mapping: saved settings for this board (or {}).
 function toCallSheetItem(raw, mapping = {}) {
   const main = build(raw.column_values, 'item', mapping);
@@ -104,4 +132,4 @@ function fileColumnFor(raw, fieldKey, mapping = {}) {
   return cv && cv.type === 'file' ? cv.id : null;
 }
 
-module.exports = { toCallSheetItem, fileColumnFor, findColumn, readValue };
+module.exports = { toCallSheetItem, fileColumnFor, findColumn, readValue, mergeWorkflowInputs };

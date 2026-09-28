@@ -9,13 +9,13 @@ const { buildPdf, saveColumnFor, DOC_KINDS } = require('./service');
 const { toCallSheetItem } = require('./normalize');
 
 // Make one PDF and attach it to the item's Files column.
-async function makeAndSave(token, itemId, kind, boardIdHint) {
+async function makeAndSave(token, itemId, kind, boardIdHint, workflowInputs = {}) {
   const raw = await getItem(token, itemId);
   const boardId = (raw.board && raw.board.id) || boardIdHint;
   const mapping = await getMapping(boardId);
-  const columnId = saveColumnFor(kind, raw, mapping);
-  if (!columnId) throw new Error(`No Files column set for the ${DOCS[kind].label} PDF on this board (open the item view settings)`);
-  const { buffer, filename } = await buildPdf(kind, raw, mapping);
+  const columnId = saveColumnFor(kind, raw, mapping, workflowInputs);
+  if (!columnId) throw new Error(`No Files column set for the ${DOCS[kind].label} PDF. Set it in the workflow block inputs or the item view settings.`);
+  const { buffer, filename } = await buildPdf(kind, raw, mapping, workflowInputs);
   const file = await uploadPdf(token, itemId, columnId, filename, buffer);
   return { filename, assetId: file && file.id };
 }
@@ -67,7 +67,7 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
     try {
       if (!itemId) throw new Error('No itemId in action input fields');
       const results = [];
-      for (const kind of kinds) results.push(await makeAndSave(token, itemId, kind, boardId));
+      for (const kind of kinds) results.push(await makeAndSave(token, itemId, kind, boardId, fields));
       console.log(`Call sheet PDFs for item ${itemId}:`, results.map((r) => r.filename).join(', '));
       res.status(200).json({ outputFields: { assetId: results[0] && results[0].assetId } });
     } catch (err) {

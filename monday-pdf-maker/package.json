@@ -1,7 +1,7 @@
 {
   "name": "monday-pdf-maker",
   "version": "1.0.0",
-  "description": "Free, watermark-free PDF generator for monday.com items (runs on monday code)",
+  "description": "Free, watermark-free PDF generator for monday.com (quotes and call sheets), runs on monday code",
   "main": "src/index.js",
   "license": "MIT",
   "engines": {
@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "preview": "node scripts/preview.js",
-    "demo": "node scripts/preview.js --demo"
+    "demo": "node scripts/preview.js --demo",
+    "callsheet-demo": "node scripts/callsheet-demo.js"
   },
   "dependencies": {
     "@mondaycom/apps-sdk": "^3.3.2",
