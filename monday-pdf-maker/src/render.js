@@ -27,7 +27,11 @@ const templates = {
 };
 
 function renderPdf(kind, item) {
-  const docDefinition = templates[kind](item, logoDataUrl);
+  return renderDefinition(templates[kind](item, logoDataUrl));
+}
+
+// Turn any pdfmake document definition into a PDF buffer.
+function renderDefinition(docDefinition) {
   return new Promise((resolve, reject) => {
     const doc = printer.createPdfKitDocument(docDefinition);
     const chunks = [];
@@ -46,4 +50,4 @@ function filenameFor(kind, item) {
   return parts.length ? `${parts.join(' - ')}.pdf` : kind === 'spendSummary' ? 'quote-spend-summary.pdf' : 'quote.pdf';
 }
 
-module.exports = { renderPdf, filenameFor };
+module.exports = { renderPdf, renderDefinition, filenameFor };

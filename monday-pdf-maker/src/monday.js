@@ -8,6 +8,8 @@ const VALUE_FIELDS = `
   ... on BoardRelationValue { display_value }
   ... on DependencyValue { display_value }
   ... on FormulaValue { display_value }
+  ... on DropdownValue { values { label } }
+  ... on FileValue { files { ... on FileAssetValue { asset { id name public_url } } } }
 `;
 
 async function gql(token, query, variables = {}) {
@@ -86,4 +88,26 @@ async function uploadPdf(token, itemId, columnId, filename, buffer) {
   return json.data.add_file_to_column;
 }
 
-module.exports = { getItem, uploadPdf, cellText };
+// Columns of a board and of its subitems board (used by the call sheet settings panel).
+async function getBoardColumns(token, boardId) {
+  const data = await gql(
+    token,
+    `query ($ids: [ID!]) { boards(ids: $ids) { id name columns { id title type settings } } }`,
+    { ids: [String(boardId)] }
+  );
+  const board = data.boards && data.boards[0];
+  if (!board) throw new Error(`Board ${boardId} not found (or no access)`);
+  const subtasks = board.columns.find((c) => c.type === 'subtasks');
+  let settings = subtasks && subtasks.settings;
+  if (typeof settings === 'string') { try { settings = JSON.parse(settings); } catch (_) { settings = null; } }
+  const subBoardId = settings && settings.boardIds && settings.boardIds[0];
+  let subColumns = [];
+  if (subBoardId) {
+    const sub = await gql(token, `query ($ids: [ID!]) { boards(ids: $ids) { columns { id title type } } }`, { ids: [String(subBoardId)] });
+    subColumns = (sub.boards && sub.boards[0] && sub.boards[0].columns) || [];
+  }
+  const strip = (cols) => cols.filter((c) => c.type !== 'subtasks').map(({ id, title, type }) => ({ id, title, type }));
+  return { boardId: board.id, boardName: board.name, columns: strip(board.columns), subitemColumns: strip(subColumns) };
+}
+
+module.exports = { getBoardColumns, getItem, uploadPdf, cellText };

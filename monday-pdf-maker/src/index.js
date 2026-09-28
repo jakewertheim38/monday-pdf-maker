@@ -76,4 +76,7 @@ app.get('/', (_req, res) => res.send('monday PDF maker is running'));
 app.post('/action/quote-pdf', verifyMonday, handler('quote'));
 app.post('/action/spend-summary-pdf', verifyMonday, handler('spendSummary'));
 
+// Call sheet PDFs: workflow blocks + item view
+require('./callsheet/routes')(app, { verifyMonday, idFrom });
+
 app.listen(config.port, () => console.log(`Listening on port ${config.port}`));
