@@ -1,3 +1,25 @@
+name: Deploy to monday code
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install monday CLI
+        run: npm install -g @mondaycom/apps-cli
+
       - name: Deploy to monday code
         env:
           MONDAY_TOKEN: ${{ secrets.MONDAY_TOKEN }}
@@ -13,7 +35,6 @@
           APP_DIR=$(dirname "$PKG")
           echo "Deploying from: $APP_DIR"
 
-          # List versions and show raw output so we can see the format
           echo "=== Version list ==="
           mapps app-version:list -i 12222663 2>&1 || true
           echo "=== End version list ==="
