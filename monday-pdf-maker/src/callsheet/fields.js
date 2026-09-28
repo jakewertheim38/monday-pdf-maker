@@ -73,6 +73,10 @@ const FIELDS = [
   { key: 'scheduleFile', label: 'Schedule PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dd93', title: 'Schedule' },
   { key: 'rolesFile', label: 'Roles & Responsibilities PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dmxw0', title: 'R&Rs' },
   { key: 'productionDocFile', label: 'Production Document PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dr8wc', title: 'Call Sheet' },
+  { key: 'productionCoverFile', label: 'Production Cover PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dr8wc', title: 'Call Sheet' },
+  { key: 'productionCallSheetFile', label: 'Production Call Sheet PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dr8wc', title: 'Call Sheet' },
+  { key: 'productionScheduleFile', label: 'Production Schedule PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dd93', title: 'Schedule' },
+  { key: 'productionRolesFile', label: 'Production Roles PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dmxw0', title: 'R&Rs' },
 ];
 
 // The four PDFs, and which "Save PDFs to" field each one uses.
