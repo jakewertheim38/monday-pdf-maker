@@ -37,4 +37,12 @@ jobs:
           fi
           APP_DIR=$(dirname "$PKG")
           echo "Deploying from: $APP_DIR"
-          mapps code:push -i 18187219 -d "$APP_DIR"
+
+          # Look up the latest draft version ID automatically using the app ID
+          VERSION_ID=$(mapps app-version:list -i 12222663 2>/dev/null | grep -i draft | grep -oE '[0-9]{6,}' | tail -1)
+          if [ -z "$VERSION_ID" ]; then
+            echo "::error::No draft version found for app 12222663. Create a new draft version in the Developer Center."
+            exit 1
+          fi
+          echo "Deploying to version: $VERSION_ID"
+          mapps
