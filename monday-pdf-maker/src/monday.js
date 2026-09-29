@@ -113,14 +113,15 @@ async function getBoardColumns(token, boardId) {
 // Clear all files from a Files column by setting it to an empty value
 async function clearFilesColumn(token, itemId, columnId) {
   try {
+    // Clear a files column by setting it to an empty files object
     await gql(token,
-      `mutation ($itemId: ID!, $columnId: String!) {
-        change_simple_column_value(item_id: $itemId, column_id: $columnId, value: "") { id }
+      `mutation ($itemId: ID!, $columnId: String!, $value: JSON!) {
+        change_column_value(item_id: $itemId, column_id: $columnId, value: $value) { id }
       }`,
-      { itemId: String(itemId), columnId }
+      { itemId: String(itemId), columnId, value: JSON.stringify({ files: [] }) }
     );
   } catch (_) {
-    // Not all column types support clearing this way — silently skip
+    // Silently skip if clearing fails — the new file will still upload
   }
 }
 
