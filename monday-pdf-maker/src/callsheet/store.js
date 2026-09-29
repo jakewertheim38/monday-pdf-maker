@@ -31,7 +31,12 @@ async function saveMapping(boardId, mapping) {
     if (typeof v === 'string' && /^[\w-]{0,100}$/.test(v)) clean[k] = v;
   });
   memory.set(key, clean);
-  if (storage) await storage.set(key, clean);
+  if (storage) {
+    try { await storage.set(key, clean); } catch (err) {
+      console.error('saveMapping: SecureStorage write failed:', err.message);
+      // clean is already in memory; the caller gets the saved value either way
+    }
+  }
   return clean;
 }
 

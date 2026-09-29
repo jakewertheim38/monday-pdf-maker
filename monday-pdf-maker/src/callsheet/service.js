@@ -10,6 +10,9 @@ const templates = {
   productionDoc: require('./templates/productionDoc'),
   // Production document split into four standalone PDFs
   productionCover: require('./templates/productionCover'),
+  productionCallSheet: require('./templates/productionCallSheet'),
+  productionSchedule: require('./templates/productionSchedule'),
+  productionRoles: require('./templates/productionRoles'),
 };
 
 const safe = (name) => name.replace(/[\\/:*?"<>|]+/g, '').trim();

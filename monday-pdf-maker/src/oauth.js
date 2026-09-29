@@ -26,7 +26,9 @@ async function saveUserToken(userId, token) {
   const key = tokenKey(userId);
   memory.set(key, token);
   if (storage) {
-    try { await storage.set(key, token); } catch (_) {}
+    try { await storage.set(key, token); } catch (err) {
+      console.error('saveUserToken: SecureStorage write failed:', err.message);
+    }
   }
 }
 
