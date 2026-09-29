@@ -440,14 +440,13 @@ module.exports = async function build(item, subitems) {
       // Crew roster card
       {
         stack: [
-          { 
-            text: `CREW ROSTER  •  ${crewRows.length} Members`, 
-            fontSize: 8, 
-            bold: true, 
-            color: 'white', 
-            fillColor: '#16a34a', 
-            margin: [0, 0, 0, 0], 
-            padding: [8, 5, 8, 5] 
+          {
+            table: { widths: ['*'], body: [[{
+              text: `CREW ROSTER  •  ${crewRows.length} Members`,
+              fontSize: 8, bold: true, color: 'white', fillColor: '#16a34a',
+              border: [false, false, false, false], margin: [6, 4, 6, 4],
+            }]] },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0 },
           },
           {
             table: {
@@ -480,14 +479,13 @@ module.exports = async function build(item, subitems) {
       // Talent roster card
       {
         stack: [
-          { 
-            text: `TALENT ROSTER  •  ${talentRows.length} Members`, 
-            fontSize: 8, 
-            bold: true, 
-            color: 'white', 
-            fillColor: '#64748b', 
-            margin: [0, 0, 0, 0], 
-            padding: [8, 5, 8, 5] 
+          {
+            table: { widths: ['*'], body: [[{
+              text: `TALENT ROSTER  •  ${talentRows.length} Members`,
+              fontSize: 8, bold: true, color: 'white', fillColor: '#64748b',
+              border: [false, false, false, false], margin: [6, 4, 6, 4],
+            }]] },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0 },
           },
           {
             table: {
@@ -519,7 +517,14 @@ module.exports = async function build(item, subitems) {
       // Map and Location/Notes card (moved to bottom)
       {
         stack: [
-          { text: 'LOCATION & NOTES', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [8, 5, 8, 5] },
+          {
+            table: { widths: ['*'], body: [[{
+              text: 'LOCATION & NOTES',
+              fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL,
+              border: [false, false, false, false], margin: [6, 4, 6, 4],
+            }]] },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0 },
+          },
           {
             table: {
               widths: ['*', '*'],
@@ -580,7 +585,14 @@ module.exports = async function build(item, subitems) {
       // Location 2 section (if available)
       ...(location2 ? [{
         stack: [
-          { text: 'LOCATION 2', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [8, 5, 8, 5] },
+          {
+            table: { widths: ['*'], body: [[{
+              text: 'LOCATION 2',
+              fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL,
+              border: [false, false, false, false], margin: [6, 4, 6, 4],
+            }]] },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0 },
+          },
           {
             table: {
               widths: ['*', 306],
@@ -641,7 +653,14 @@ module.exports = async function build(item, subitems) {
       // Location 3 section (if available)
       ...(location3 ? [{
         stack: [
-          { text: 'LOCATION 3', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [8, 5, 8, 5] },
+          {
+            table: { widths: ['*'], body: [[{
+              text: 'LOCATION 3',
+              fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL,
+              border: [false, false, false, false], margin: [6, 4, 6, 4],
+            }]] },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0 },
+          },
           {
             table: {
               widths: ['*', 306],
