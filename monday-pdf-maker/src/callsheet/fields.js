@@ -86,9 +86,6 @@ const DOCS = {
   roles: { label: 'Roles & Responsibilities', fileField: 'rolesFile' },
   productionDoc: { label: 'Production Document', fileField: 'productionDocFile' },
   productionCover: { label: 'Production Cover', fileField: 'productionCoverFile' },
-  productionCallSheet: { label: 'Production Call Sheet', fileField: 'productionCallSheetFile' },
-  productionSchedule: { label: 'Production Schedule', fileField: 'productionScheduleFile' },
-  productionRoles: { label: 'Production Roles', fileField: 'productionRolesFile' },
 };
 
 module.exports = { FIELDS, KINDS, DOCS };
