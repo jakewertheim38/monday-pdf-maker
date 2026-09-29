@@ -190,8 +190,14 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
           schedule: subitems.filter((s) => s.type === 'Schedule').length,
           roles: subitems.filter((s) => s.resposibility && s.resposibility.trim() !== '').length,
         },
-        crew: subitems.filter((s) => s.crewTalent === 'Crew' || s.crewTalent === 'Talent')
-          .map((s) => ({ kind: s.crewTalent, name: s.name1 || s.name, position: s.position, callTime: s.callTime })),
+        crew: subitems.filter((s) => s.crewTalent === 'Crew')
+          .map((s) => ({ name: s.name1 || s.name, position: s.position, callTime: s.callTime, wrapTime: s.wrapTime, email: s.email && s.email.email, note: s.callSheetNote })),
+        talent: subitems.filter((s) => s.crewTalent === 'Talent')
+          .map((s) => ({ name: s.name1 || s.name, position: s.position, callTime: s.callTime, wrapTime: s.wrapTime, note: s.callSheetNote })),
+        schedule: subitems.filter((s) => s.type === 'Schedule')
+          .map((s) => ({ date: s.date, timeStart: s.timeStart, timeEnd: s.timeEnd, scene: s.sceneName, location: s.location, description: s.description, stillVideo: Array.isArray(s.stillVideo) ? s.stillVideo.join(', ') : s.stillVideo, talent: s.talent, clothing: s.clothing })),
+        roles: subitems.filter((s) => s.resposibility && s.resposibility.trim() !== '')
+          .map((s) => ({ name: s.name1 || s.name, position: s.position, responsibility: s.resposibility })),
         saveTo,
         docs: DOC_KINDS.map((k) => ({ kind: k, label: DOCS[k].label })),
         canEdit: canEdit(req.session),
