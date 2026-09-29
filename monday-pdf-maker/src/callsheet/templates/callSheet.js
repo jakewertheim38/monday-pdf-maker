@@ -2,6 +2,12 @@
 // only the browser-specific parts (download/upload) were removed.
 const { MYPROTEIN_TEAL, formatDateUK, formatTime, processWeatherText, weatherBlock, imageToBase64 } = require('../helpers');
 
+// Vertical space between stacked cards in the call sheet header (both side columns)
+const HEADER_CARD_GAP = 8;
+// Rough spacer added to the bottom of the left/right header columns so they line up with
+// the confidential notice at the bottom of the centre column.
+const LEFT_RIGHT_COLUMN_SPACER = 0;
+
 module.exports = async function build(item, subitems) {
 
   const producerName = item.producer?.[0]?.name || '';
@@ -108,7 +114,7 @@ module.exports = async function build(item, subitems) {
     }),
 
     content: [
-      // Three-column header layout (same structure as Traditional)
+      // Three-column header layout — every card in the left and right columns is separated by HEADER_CARD_GAP (same structure as Traditional)
       {
         columns: [
           // Left: Company info card
@@ -117,7 +123,6 @@ module.exports = async function build(item, subitems) {
             stack: [
               {
                 stack: [
-                  { text: 'COMPANY', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                   {
                     table: {
                       widths: ['*'],
@@ -141,14 +146,13 @@ module.exports = async function build(item, subitems) {
                     },
                   },
                 ],
-                margin: [0, 0, 0, 8],
+                margin: [0, 0, 0, HEADER_CARD_GAP],
               },
               {
                 // Producer and Production ID side by side
                 columns: [
                   { width: '*', ...{
                 stack: [
-                  { text: 'PRODUCER', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                   {
                     table: {
                       widths: ['*'],
@@ -172,12 +176,10 @@ module.exports = async function build(item, subitems) {
                     },
                   },
                 ],
-                margin: [0, 0, 0, 6],
               } },
                   { width: '*', ...{
                     
                     stack: [
-                      { text: 'PRODUCTION ID', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                       {
                         table: {
                           widths: ['*'],
@@ -204,11 +206,10 @@ module.exports = async function build(item, subitems) {
                   } },
                 ],
                 columnGap: 6,
-                margin: [0, 0, 0, 6],
+                margin: [0, 0, 0, HEADER_CARD_GAP],
               },
               {
                 stack: [
-                  { text: 'SHOOT DATE', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                   {
                     table: {
                       widths: ['*'],
@@ -233,6 +234,8 @@ module.exports = async function build(item, subitems) {
                   },
                 ],
               },
+              // Spacer so this column's bottom roughly lines up with the centre column's notes line
+              { text: '', margin: [0, 0, 0, LEFT_RIGHT_COLUMN_SPACER] },
             ],
           },
 
@@ -242,9 +245,9 @@ module.exports = async function build(item, subitems) {
             stack: [
               ...(logoDataUrl ? [{
                 image: logoDataUrl,
-                width: 80,
+                width: 92,
                 alignment: 'center',
-                margin: [0, 0, 0, 8]
+                margin: [0, 0, 0, 2]
               }] : []),
               { 
                 text: 'Call Sheet', 
@@ -274,49 +277,17 @@ module.exports = async function build(item, subitems) {
                     border: [false, false, false, false],
                     fontSize: 8,
                     lineHeight: 1.3,
-                    margin: [8, 8, 8, 8],
+                    margin: [8, 11, 8, 11],
                   }]],
                 },
                 layout: { 
                   hLineWidth: () => 0, 
                   vLineWidth: () => 0
                 },
-                margin: [0, 0, 0, 8]
+                // Pushed down and stretched so it lines up top/bottom with the Shoot Date /
+                // Production Team Phone Number cards beside it.
+                margin: [0, 5, 0, 8]
               },
-              // Call Sheet Notes (if available)
-              ...(callSheetNotesData.text ? [{
-                stack: [
-                  { text: 'CALL SHEET NOTES', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
-                  {
-                    table: {
-                      widths: ['*'],
-                      body: [[
-                        callSheetNotesData.hasIcon
-                          ? {
-                              columns: [
-                                { svg: callSheetNotesData.icon, width: 14, height: 14, margin: [0, 0, 3, 0] },
-                                { text: callSheetNotesData.text, fontSize: 8, margin: [0, 1, 0, 0] }
-                              ],
-                              border: [false, false, false, false],
-                              fillColor: '#f8fafc',
-                              margin: [6, 6, 6, 6]
-                            }
-                          : {
-                              text: callSheetNotesData.text,
-                              fontSize: 8,
-                              border: [false, false, false, false],
-                              fillColor: '#f8fafc',
-                              margin: [6, 6, 6, 6]
-                            }
-                      ]],
-                    },
-                    layout: { 
-                      hLineWidth: () => 0, 
-                      vLineWidth: () => 0
-                    },
-                  },
-                ],
-              }] : []),
             ],
           },
 
@@ -330,7 +301,6 @@ module.exports = async function build(item, subitems) {
                 stack: [
                   {
                     stack: [
-                      { text: 'WEATHER', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                       {
                         table: {
                           widths: ['*'],
@@ -358,11 +328,10 @@ module.exports = async function build(item, subitems) {
                   },
                   
                 ],
-                margin: [0, 0, 0, 6],
+                margin: [0, 0, 0, HEADER_CARD_GAP],
               },
               {
                 stack: [
-                  { text: 'NEAREST HOSPITAL', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                   {
                     table: {
                       widths: ['*'],
@@ -386,11 +355,10 @@ module.exports = async function build(item, subitems) {
                     },
                   },
                 ],
-                margin: [0, 0, 0, 6],
+                margin: [0, 0, 0, HEADER_CARD_GAP],
               },
               {
                 stack: [
-                  { text: 'CONTACT', fontSize: 8, bold: true, color: 'white', fillColor: MYPROTEIN_TEAL, margin: [0, 0, 0, 0], padding: [6, 4, 6, 4] },
                   {
                     table: {
                       widths: ['*'],
@@ -424,12 +392,50 @@ module.exports = async function build(item, subitems) {
                   },
                 ],
               },
+              // Spacer so this column's bottom roughly lines up with the centre column's notes line
+              { text: '', margin: [0, 0, 0, LEFT_RIGHT_COLUMN_SPACER] },
             ],
           },
         ],
         columnGap: 8,
         margin: [0, 0, 0, 12],
       },
+
+      // Notes section (call sheet notes), full width, above the crew roster
+      ...(callSheetNotesData.text ? [{
+        stack: [
+          { text: 'Notes:', fontSize: 9, bold: true, color: '#1e293b', margin: [0, 0, 0, 4] },
+          {
+            table: {
+              widths: ['*'],
+              body: [[
+                callSheetNotesData.hasIcon
+                  ? {
+                      columns: [
+                        { svg: callSheetNotesData.icon, width: 14, height: 14, margin: [0, 0, 3, 0] },
+                        { text: callSheetNotesData.text, fontSize: 8, margin: [0, 1, 0, 0] }
+                      ],
+                      border: [false, false, false, false],
+                      fillColor: '#f8fafc',
+                      margin: [8, 8, 8, 8]
+                    }
+                  : {
+                      text: callSheetNotesData.text,
+                      fontSize: 8,
+                      border: [false, false, false, false],
+                      fillColor: '#f8fafc',
+                      margin: [8, 8, 8, 8]
+                    }
+              ]],
+            },
+            layout: {
+              hLineWidth: () => 0,
+              vLineWidth: () => 0
+            },
+          },
+        ],
+        margin: [0, 0, 0, 12],
+      }] : []),
 
       // Crew roster card
       {
