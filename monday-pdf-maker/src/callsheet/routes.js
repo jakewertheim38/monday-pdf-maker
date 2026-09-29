@@ -17,6 +17,8 @@ async function makeAndSave(token, itemId, kind, boardIdHint, workflowInputs = {}
   const columnId = saveColumnFor(kind, raw, mapping, workflowInputs);
   if (!columnId) throw new Error(`No Files column set for the ${DOCS[kind].label} PDF. Set it in the workflow block inputs or the item view settings.`);
   const { buffer, filename } = await buildPdf(kind, raw, mapping, workflowInputs);
+  // Clear existing files before uploading so we replace rather than append.
+  await clearFilesColumn(token, boardId, itemId, columnId);
   const file = await uploadPdf(token, itemId, columnId, filename, buffer);
   return { filename, assetId: file && file.id };
 }
