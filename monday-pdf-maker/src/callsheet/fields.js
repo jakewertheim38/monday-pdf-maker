@@ -72,12 +72,8 @@ const FIELDS = [
   { key: 'callSheetFile', label: 'Call Sheet PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dr8wc', title: 'Call Sheet' },
   { key: 'scheduleFile', label: 'Schedule PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dd93', title: 'Schedule' },
   { key: 'rolesFile', label: 'Roles & Responsibilities PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: 'file_mm1dmxw0', title: 'R&Rs' },
-  // Production standalone PDFs — no default column IDs (board-specific, set via settings)
+  // Production document PDF — no default column ID (board-specific, set via settings)
   { key: 'productionDocFile', label: 'Production Document PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: '', title: 'Production Document' },
-  { key: 'productionCoverFile', label: 'Production Cover PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: '', title: 'Production Cover' },
-  { key: 'productionCallSheetFile', label: 'Production Call Sheet PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: '', title: 'Production Call Sheet' },
-  { key: 'productionScheduleFile', label: 'Production Schedule PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: '', title: 'Production Schedule' },
-  { key: 'productionRolesFile', label: 'Production Roles PDF', group: 'Save PDFs to', level: 'item', kind: 'file', id: '', title: 'Production Roles' },
 ];
 
 // One entry per DOC_KIND — maps each kind to its label and the FIELDS key for its save column.
@@ -86,10 +82,6 @@ const DOCS = {
   schedule: { label: 'Schedule', fileField: 'scheduleFile' },
   roles: { label: 'Roles & Responsibilities', fileField: 'rolesFile' },
   productionDoc: { label: 'Production Document', fileField: 'productionDocFile' },
-  productionCover: { label: 'Production Cover', fileField: 'productionCoverFile' },
-  productionCallSheet: { label: 'Production Call Sheet', fileField: 'productionCallSheetFile' },
-  productionSchedule: { label: 'Production Schedule', fileField: 'productionScheduleFile' },
-  productionRoles: { label: 'Production Roles', fileField: 'productionRolesFile' },
 };
 
 module.exports = { FIELDS, KINDS, DOCS };

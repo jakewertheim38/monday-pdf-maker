@@ -102,13 +102,6 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
   app.post('/action/roles-pdf', verifyMonday, action(['roles']));
   app.post('/action/production-doc-pdf', verifyMonday, action(['productionDoc']));
   app.post('/action/callsheet-pack', verifyMonday, action(['callSheet', 'schedule', 'roles']));
-  // Production document split into four individual pages
-  app.post('/action/production-cover-pdf', verifyMonday, action(['productionCover']));
-  app.post('/action/production-callsheet-pdf', verifyMonday, action(['productionCallSheet']));
-  app.post('/action/production-schedule-pdf', verifyMonday, action(['productionSchedule']));
-  app.post('/action/production-roles-pdf', verifyMonday, action(['productionRoles']));
-  // Full production document pack (all four pages in one go)
-  app.post('/action/production-pack', verifyMonday, action(['productionCover', 'productionCallSheet', 'productionSchedule', 'productionRoles']));
 
   // ---------- OAuth ----------
   // Redirect the user to monday's OAuth page
