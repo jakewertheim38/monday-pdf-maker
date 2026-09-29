@@ -1,7 +1,7 @@
 // Call sheet: workflow block actions + the item view (page and its API).
 const path = require('path');
 const jwt = require('jsonwebtoken');
-const { getItem, uploadPdf, getBoardColumns } = require('../monday');
+const { getItem, uploadPdf, clearFilesColumn, getBoardColumns } = require('../monday');
 const { getSetting } = require('../secrets');
 const { FIELDS, KINDS, DOCS } = require('./fields');
 const { getMapping, saveMapping } = require('./store');
@@ -208,19 +208,22 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
     }
   });
 
-  // Make a PDF: download it, or save it to the item
+  // Make a PDF: always saves to item AND downloads to browser
   app.post('/api/callsheet/pdf', verifySession, async (req, res) => {
-    const { itemId, kind, save } = req.body || {};
+    const { itemId, kind } = req.body || {};
     try {
       if (!DOC_KINDS.includes(kind)) throw new Error('Unknown document');
-      if (save) {
-        if (!canEdit(req.session)) throw new Error('View-only users cannot save files');
-        const result = await makeAndSave(req.apiToken, itemId, kind);
-        return res.json({ ok: true, ...result });
-      }
       const raw = await getItem(req.apiToken, itemId);
-      const mapping = await getMapping(raw.board && raw.board.id);
+      const boardId = (raw.board && raw.board.id);
+      const mapping = await getMapping(boardId);
       const { buffer, filename } = await buildPdf(kind, raw, mapping);
+      // Save to item (clear first, then upload)
+      const columnId = saveColumnFor(kind, raw, mapping);
+      if (columnId) {
+        await clearFilesColumn(req.apiToken, itemId, columnId);
+        await uploadPdf(req.apiToken, itemId, columnId, filename, buffer);
+      }
+      // Always return the PDF for download
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
       res.setHeader('X-Filename', encodeURIComponent(filename));

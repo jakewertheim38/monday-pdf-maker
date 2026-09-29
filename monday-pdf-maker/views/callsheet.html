@@ -37,14 +37,18 @@
   .panel { display: none; padding: 16px 20px 32px; }
   .panel.active { display: block; }
 
-  /* ── PDF buttons ── */
-  .pdf-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  /* ── PDF grid ── */
+  .dl-section { padding: 12px 20px 4px; }
+  .dl-heading { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+  .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 8px; }
+  .dl-card { background: var(--panel); border: 0.5px solid var(--border); border-radius: 8px; padding: 11px 13px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: inherit; transition: background .1s; }
+  .dl-card:hover:not(:disabled) { background: var(--border); }
+  .dl-card:disabled { opacity: .5; cursor: not-allowed; }
+  .dl-card .icon { font-size: 20px; color: var(--primary); flex-shrink: 0; }
+  .dl-card .name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .dl-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
   button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 6px; border: 1px solid transparent; padding: 6px 12px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-dl  { background: transparent; color: var(--text); border-color: var(--border); }
-  .btn-save { background: var(--primary); color: #fff; }
-  .btn-dl:hover:not(:disabled)  { background: var(--panel); }
-  .btn-save:hover:not(:disabled){ background: var(--primary-h); }
 
   /* ── Tables ── */
   .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 0 8px; }
@@ -104,6 +108,7 @@
   </div>
   <div class="info-row" id="infoRow"></div>
 
+  <div class="dl-section"><div class="dl-heading">⬇ Download</div><div class="dl-grid" id="pdf-bar"></div></div>
   <div class="tabs">
     <div class="tab active" data-tab="callsheet">Call Sheet</div>
     <div class="tab" data-tab="schedule">Schedule</div>
@@ -112,7 +117,6 @@
 
   <!-- Call Sheet tab -->
   <div class="panel active" id="tab-callsheet">
-    <div class="pdf-bar" id="pdf-bar-callsheet"></div>
     <div class="section-title">Crew</div>
     <div class="tbl-wrap">
       <table id="crew-table">
@@ -131,7 +135,6 @@
 
   <!-- Schedule tab -->
   <div class="panel" id="tab-schedule">
-    <div class="pdf-bar" id="pdf-bar-schedule"></div>
     <div class="tbl-wrap">
       <table id="schedule-table">
         <thead><tr><th>Date</th><th>Time</th><th>Scene</th><th>Location</th><th>Description</th><th>Still/Video</th><th>Talent</th><th>Clothing</th></tr></thead>
@@ -142,7 +145,6 @@
 
   <!-- R&R tab -->
   <div class="panel" id="tab-roles">
-    <div class="pdf-bar" id="pdf-bar-roles"></div>
     <div class="tbl-wrap">
       <table id="roles-table">
         <thead><tr><th>Name</th><th>Position</th><th>Responsibility</th></tr></thead>
@@ -213,14 +215,16 @@
 
   function pdfButtons(kinds, containerId) {
     const d = state.data;
-    $( containerId).innerHTML = kinds.map(kind => {
+    $(containerId).innerHTML = kinds.map(kind => {
       const doc = d.docs.find(x => x.kind === kind);
       if (!doc) return '';
-      const canSave = d.saveTo[kind] && d.canEdit;
-      return `<button class="btn-dl" data-kind="${kind}" data-save="0">${doc.label} — Download</button>` +
-             `<button class="btn-save" data-kind="${kind}" data-save="1"${canSave?'':' disabled'} title="${canSave?'':'No Files column set'}">${doc.label} — Save to item</button>`;
+      const hasSave = d.saveTo[kind];
+      return `<button class="dl-card" data-kind="${kind}">
+        <span class="icon" aria-hidden="true">📄</span>
+        <span><span class="name">${esc(doc.label)}</span><span class="sub">${hasSave ? 'Saves to item' : 'Download only'}</span></span>
+      </button>`;
     }).join('');
-    $( containerId).querySelectorAll('button').forEach(b => b.onclick = () => makePdf(b));
+    $(containerId).querySelectorAll('button').forEach(b => b.onclick = () => makePdf(b));
   }
 
   function render() {
@@ -241,10 +245,8 @@
       `<div class="info-card"><div class="lbl">${esc(l)}</div><div class="val">${esc(v||'—')}</div></div>`
     ).join('');
 
-    // PDF buttons per tab
-    pdfButtons(['callSheet'], 'pdf-bar-callsheet');
-    pdfButtons(['schedule'], 'pdf-bar-schedule');
-    pdfButtons(['roles','productionDoc','productionCover'], 'pdf-bar-roles');
+    // PDF buttons above tabs
+    pdfButtons(d.docs.map(x => x.kind), 'pdf-bar');
 
     // Crew table
     $('crew-body').innerHTML = d.crew && d.crew.length
@@ -272,21 +274,18 @@
 
   async function makePdf(button) {
     const kind = button.dataset.kind;
-    const save = button.dataset.save === '1';
-    const orig = button.textContent; button.disabled = true; button.textContent = save ? 'Saving…' : 'Creating…';
+    const orig = button.textContent; button.disabled = true; button.querySelector('.name').textContent = 'Generating…';
     try {
-      const res = await api('/api/callsheet/pdf', { method:'POST', body: JSON.stringify({ itemId: state.itemId, kind, save }) });
-      if (save) { toast('Saved to item', 'ok'); }
-      else {
-        const blob = await res.blob();
-        const name = decodeURIComponent(res.headers.get('X-Filename') || 'callsheet.pdf');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href=url; a.download=name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      }
+      const res = await api('/api/callsheet/pdf', { method:'POST', body: JSON.stringify({ itemId: state.itemId, kind }) });
+      const blob = await res.blob();
+      const name = decodeURIComponent(res.headers.get('X-Filename') || kind + '.pdf');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast('Saved to item and downloaded', 'ok');
     } catch(e) { toast(e.message, 'err'); }
-    finally { button.disabled = false; button.textContent = orig; }
+    finally { button.disabled = false; button.querySelector('.name').textContent = orig; }
   }
 
   async function load() {

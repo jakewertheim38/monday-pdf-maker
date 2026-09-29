@@ -110,4 +110,18 @@ async function getBoardColumns(token, boardId) {
   return { boardId: board.id, boardName: board.name, columns: strip(board.columns), subitemColumns: strip(subColumns) };
 }
 
-module.exports = { getBoardColumns, getItem, uploadPdf, cellText };
+// Clear all files from a Files column by setting it to an empty value
+async function clearFilesColumn(token, itemId, columnId) {
+  try {
+    await gql(token,
+      `mutation ($itemId: ID!, $columnId: String!) {
+        change_simple_column_value(item_id: $itemId, column_id: $columnId, value: "") { id }
+      }`,
+      { itemId: String(itemId), columnId }
+    );
+  } catch (_) {
+    // Not all column types support clearing this way — silently skip
+  }
+}
+
+module.exports = { getBoardColumns, getItem, uploadPdf, clearFilesColumn, cellText };
