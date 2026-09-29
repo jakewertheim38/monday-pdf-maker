@@ -208,7 +208,47 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
     }
   });
 
-  // Make a PDF: always saves to item AND downloads to browser
+  // Make a PDF and stream it back to the browser (download only, no monday writes).
+  app.post('/api/callsheet/pdf/download', verifySession, async (req, res) => {
+    const { itemId, kind } = req.body || {};
+    try {
+      if (!DOC_KINDS.includes(kind)) throw new Error('Unknown document');
+      const raw = await getItem(req.apiToken, itemId);
+      const boardId = (raw.board && raw.board.id);
+      const mapping = await getMapping(boardId);
+      const { buffer, filename } = await buildPdf(kind, raw, mapping);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+      res.setHeader('X-Filename', encodeURIComponent(filename));
+      res.send(buffer);
+    } catch (err) {
+      console.error('Item view PDF (download) failed:', err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // Save a PDF to the item's Files column (clears first, then uploads).
+  // Also streams the PDF back so the browser can download it if wanted.
+  app.post('/api/callsheet/pdf/save', verifySession, async (req, res) => {
+    const { itemId, kind } = req.body || {};
+    try {
+      if (!DOC_KINDS.includes(kind)) throw new Error('Unknown document');
+      const raw = await getItem(req.apiToken, itemId);
+      const boardId = (raw.board && raw.board.id);
+      const mapping = await getMapping(boardId);
+      const { buffer, filename } = await buildPdf(kind, raw, mapping);
+      const columnId = saveColumnFor(kind, raw, mapping);
+      if (!columnId) throw new Error(`No Files column configured for the ${kind} PDF — open ⚙️ Settings to set one.`);
+      await clearFilesColumn(req.apiToken, boardId, itemId, columnId);
+      await uploadPdf(req.apiToken, itemId, columnId, filename, buffer);
+      res.json({ ok: true, filename });
+    } catch (err) {
+      console.error('Item view PDF (save) failed:', err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // Legacy route kept for backwards compatibility — behaves like /download.
   app.post('/api/callsheet/pdf', verifySession, async (req, res) => {
     const { itemId, kind } = req.body || {};
     try {
@@ -217,13 +257,6 @@ module.exports = function registerCallSheet(app, { verifyMonday, idFrom }) {
       const boardId = (raw.board && raw.board.id);
       const mapping = await getMapping(boardId);
       const { buffer, filename } = await buildPdf(kind, raw, mapping);
-      // Save to item (clear first, then upload)
-      const columnId = saveColumnFor(kind, raw, mapping);
-      if (columnId) {
-        await clearFilesColumn(req.apiToken, itemId, columnId);
-        await uploadPdf(req.apiToken, itemId, columnId, filename, buffer);
-      }
-      // Always return the PDF for download
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
       res.setHeader('X-Filename', encodeURIComponent(filename));

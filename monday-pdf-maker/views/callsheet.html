@@ -109,6 +109,7 @@
   <div class="info-row" id="infoRow"></div>
 
   <div class="dl-section"><div class="dl-heading">⬇ Download</div><div class="dl-grid" id="pdf-bar"></div></div>
+  <div class="dl-section" id="save-section" style="display:none"><div class="dl-heading">💾 Save to column</div><div class="dl-grid" id="save-bar"></div></div>
   <div class="tabs">
     <div class="tab active" data-tab="callsheet">Call Sheet</div>
     <div class="tab" data-tab="schedule">Schedule</div>
@@ -213,18 +214,29 @@
   function row(...cells) { return '<tr>' + cells.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>'; }
   function emptyRow(cols, msg) { return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`; }
 
-  function pdfButtons(kinds, containerId) {
+  function pdfDownloadButtons() {
     const d = state.data;
-    $(containerId).innerHTML = kinds.map(kind => {
-      const doc = d.docs.find(x => x.kind === kind);
-      if (!doc) return '';
-      const hasSave = d.saveTo[kind];
-      return `<button class="dl-card" data-kind="${kind}">
+    $('pdf-bar').innerHTML = d.docs.map(doc => {
+      return `<button class="dl-card" data-kind="${doc.kind}">
         <span class="icon" aria-hidden="true">&#128196;</span>
-        <span><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">${hasSave ? 'Saves to item' : 'Download only'}</span></span>
+        <span><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">Download PDF</span></span>
       </button>`;
     }).join('');
-    $(containerId).querySelectorAll('button').forEach(b => b.onclick = () => makePdf(b));
+    $('pdf-bar').querySelectorAll('button').forEach(b => b.onclick = () => downloadPdf(b));
+  }
+
+  function pdfSaveButtons() {
+    const d = state.data;
+    const saveKinds = d.docs.filter(doc => d.saveTo[doc.kind]);
+    if (saveKinds.length === 0) { $('save-section').style.display = 'none'; return; }
+    $('save-section').style.display = '';
+    $('save-bar').innerHTML = saveKinds.map(doc => {
+      return `<button class="dl-card" data-kind="${doc.kind}">
+        <span class="icon" aria-hidden="true">&#128190;</span>
+        <span><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">Save to column</span></span>
+      </button>`;
+    }).join('');
+    $('save-bar').querySelectorAll('button').forEach(b => b.onclick = () => savePdf(b));
   }
 
   function render() {
@@ -246,7 +258,8 @@
     ).join('');
 
     // PDF buttons above tabs
-    pdfButtons(d.docs.map(x => x.kind), 'pdf-bar');
+    pdfDownloadButtons();
+    pdfSaveButtons();
 
     // Crew table
     $('crew-body').innerHTML = d.crew && d.crew.length
@@ -272,21 +285,35 @@
     $('main').style.display = 'block';
   }
 
-  async function makePdf(button) {
+  async function downloadPdf(button) {
     const kind = button.dataset.kind;
     const nameEl = button.querySelector('.name');
     const orig = nameEl.textContent;
     button.disabled = true;
     nameEl.textContent = 'Generating…';
     try {
-      const res = await api('/api/callsheet/pdf', { method:'POST', body: JSON.stringify({ itemId: state.itemId, kind }) });
+      const res = await api('/api/callsheet/pdf/download', { method:'POST', body: JSON.stringify({ itemId: state.itemId, kind }) });
       const blob = await res.blob();
       const name = decodeURIComponent(res.headers.get('X-Filename') || kind + '.pdf');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href=url; a.download=name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10000);
-      toast('Saved to item and downloaded', 'ok');
+      toast('Downloaded', 'ok');
+    } catch(e) { toast(e.message, 'err'); }
+    finally { button.disabled = false; nameEl.textContent = orig; }
+  }
+
+  async function savePdf(button) {
+    const kind = button.dataset.kind;
+    const nameEl = button.querySelector('.name');
+    const orig = nameEl.textContent;
+    button.disabled = true;
+    nameEl.textContent = 'Saving…';
+    try {
+      const res = await api('/api/callsheet/pdf/save', { method:'POST', body: JSON.stringify({ itemId: state.itemId, kind }) });
+      const data = await res.json();
+      toast('Saved to column: ' + (data.filename || kind), 'ok');
     } catch(e) { toast(e.message, 'err'); }
     finally { button.disabled = false; nameEl.textContent = orig; }
   }

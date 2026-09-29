@@ -110,19 +110,16 @@ async function getBoardColumns(token, boardId) {
   return { boardId: board.id, boardName: board.name, columns: strip(board.columns), subitemColumns: strip(subColumns) };
 }
 
-// Clear all files from a Files column by setting it to an empty value
-async function clearFilesColumn(token, itemId, columnId) {
-  try {
-    // Clear a files column by setting it to an empty files object
-    await gql(token,
-      `mutation ($itemId: ID!, $columnId: String!, $value: JSON!) {
-        change_column_value(item_id: $itemId, column_id: $columnId, value: $value) { id }
-      }`,
-      { itemId: String(itemId), columnId, value: JSON.stringify({ files: [] }) }
-    );
-  } catch (_) {
-    // Silently skip if clearing fails — the new file will still upload
-  }
+// Clear all files from a Files column.
+// Monday's API requires {"clear_all": true} — {"files": []} does not work.
+// board_id is also required by some API versions, so we always pass it.
+async function clearFilesColumn(token, boardId, itemId, columnId) {
+  await gql(token,
+    `mutation ($boardId: ID!, $itemId: ID!, $columnId: String!, $value: JSON!) {
+      change_column_value(board_id: $boardId, item_id: $itemId, column_id: $columnId, value: $value) { id }
+    }`,
+    { boardId: String(boardId), itemId: String(itemId), columnId, value: JSON.stringify({ clear_all: true }) }
+  );
 }
 
 module.exports = { getBoardColumns, getItem, uploadPdf, clearFilesColumn, cellText };
