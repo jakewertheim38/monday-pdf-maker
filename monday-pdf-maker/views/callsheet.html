@@ -45,8 +45,9 @@
   .dl-card:hover:not(:disabled) { background: var(--border); }
   .dl-card:disabled { opacity: .5; cursor: not-allowed; }
   .dl-card .icon { font-size: 20px; color: var(--primary); flex-shrink: 0; }
+  .dl-card .text { display: flex; flex-direction: column; min-width: 0; }
   .dl-card .name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.2; }
-  .dl-card .sub { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dl-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
   button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 6px; border: 1px solid transparent; padding: 6px 12px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -219,7 +220,7 @@
     $('pdf-bar').innerHTML = d.docs.map(doc => {
       return `<button class="dl-card" data-kind="${doc.kind}">
         <span class="icon" aria-hidden="true">&#128196;</span>
-        <span><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">Download PDF</span></span>
+        <span class="text"><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">Download PDF</span></span>
       </button>`;
     }).join('');
     $('pdf-bar').querySelectorAll('button').forEach(b => b.onclick = () => downloadPdf(b));
@@ -233,7 +234,7 @@
     $('save-bar').innerHTML = saveKinds.map(doc => {
       return `<button class="dl-card" data-kind="${doc.kind}">
         <span class="icon" aria-hidden="true">&#128190;</span>
-        <span><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">Save to column</span></span>
+        <span class="text"><span class="name" data-label="${esc(doc.label)}">${esc(doc.label)}</span><span class="sub">Save to column</span></span>
       </button>`;
     }).join('');
     $('save-bar').querySelectorAll('button').forEach(b => b.onclick = () => savePdf(b));
