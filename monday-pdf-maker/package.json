@@ -17,6 +17,7 @@
     "@mondaycom/apps-sdk": "^3.3.2",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "pdfmake": "^0.2.10"
+    "pdfmake": "^0.2.10",
+    "sharp": "^0.35.5"
   }
 }

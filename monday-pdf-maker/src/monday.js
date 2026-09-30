@@ -67,8 +67,8 @@ async function getItem(token, itemId) {
   return item;
 }
 
-// Upload a PDF buffer into a Files column on the item.
-async function uploadPdf(token, itemId, columnId, filename, buffer) {
+// Upload any file buffer into a Files column on the item.
+async function uploadFile(token, itemId, columnId, filename, buffer, mimeType = 'application/octet-stream') {
   const form = new FormData();
   form.append(
     'query',
@@ -76,7 +76,7 @@ async function uploadPdf(token, itemId, columnId, filename, buffer) {
       add_file_to_column (item_id: ${Number(itemId)}, column_id: "${columnId}", file: $file) { id }
     }`
   );
-  form.append('variables[file]', new Blob([buffer], { type: 'application/pdf' }), filename);
+  form.append('variables[file]', new Blob([buffer], { type: mimeType }), filename);
 
   const res = await fetch(`${API}/file`, {
     method: 'POST',
@@ -86,6 +86,11 @@ async function uploadPdf(token, itemId, columnId, filename, buffer) {
   const json = await res.json();
   if (!res.ok || json.errors) throw new Error('Upload failed: ' + JSON.stringify(json.errors || json));
   return json.data.add_file_to_column;
+}
+
+// Kept for backwards compatibility — delegates to uploadFile.
+function uploadPdf(token, itemId, columnId, filename, buffer) {
+  return uploadFile(token, itemId, columnId, filename, buffer, 'application/pdf');
 }
 
 // Columns of a board and of its subitems board (used by the call sheet settings panel).
@@ -122,4 +127,4 @@ async function clearFilesColumn(token, boardId, itemId, columnId) {
   );
 }
 
-module.exports = { getBoardColumns, getItem, uploadPdf, clearFilesColumn, cellText };
+module.exports = { getBoardColumns, getItem, uploadFile, uploadPdf, clearFilesColumn, cellText };
