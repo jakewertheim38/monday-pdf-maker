@@ -73,6 +73,8 @@ function handler(kind) {
 }
 
 app.get('/', (_req, res) => res.send('monday PDF maker is running'));
+app.head('/health', (_req, res) => res.sendStatus(200));
+app.get('/health', (_req, res) => res.sendStatus(200));
 app.post('/action/quote-pdf', verifyMonday, handler('quote'));
 app.post('/action/spend-summary-pdf', verifyMonday, handler('spendSummary'));
 
