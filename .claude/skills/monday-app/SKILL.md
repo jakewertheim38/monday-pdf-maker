@@ -1,3 +1,8 @@
+---
+name: monday-app
+description: Reference skill for building monday.com apps on monday code (Node.js/Express on Cloud Run). Load this skill whenever the user mentions building a new monday app, adding a workflow block or automation action, deploying to monday code, setting up a new feature route, or debugging a monday automation. It captures the project structure, boilerplate patterns, deployment flow, and known gotchas for this stack so you don't have to re-explain them each session.
+---
+
 # Monday App Skill
 
 ## On invocation — ask for project details first
