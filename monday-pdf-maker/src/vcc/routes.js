@@ -2,8 +2,16 @@
 // Input fields: cardNumber, expDate, cvv, filesColumn (column id or title), itemId.
 // Output: { assetId } of the uploaded PNG.
 const { renderPng } = require('./template');
-const { uploadFile, clearFilesColumn, getItem } = require('../monday');
+const { uploadFile, clearFilesColumn, getItem, cellText } = require('../monday');
 const { getSetting } = require('../secrets');
+
+// monday sends column IDs as field values when the user maps a board column to an input.
+// Look up the real text value from the fetched item; fall back to the raw string if not found.
+function colVal(raw, idOrValue) {
+  const s = String(idOrValue || '').trim();
+  const col = raw.column_values.find((c) => c.id === s);
+  return col ? cellText(col) : s;
+}
 
 module.exports = function registerVcc(app, { verifyMonday, idFrom }) {
   app.post('/action/vcc-png', verifyMonday, async (req, res) => {
@@ -16,19 +24,21 @@ module.exports = function registerVcc(app, { verifyMonday, idFrom }) {
       if (!itemId) throw new Error('No itemId in action input fields');
       if (!token) throw new Error('No API token available');
 
-      const cardNumber = String(fields.cardNumber || '').trim();
-      const expDate = String(fields.expDate || '').trim();
-      const cvv = String(fields.cvv || '').trim();
-
-      if (!cardNumber) throw new Error('cardNumber is required');
-      if (!expDate) throw new Error('expDate is required');
-      if (!cvv) throw new Error('cvv is required');
-
       // Resolve the Files column from the workflow input.
       const colInput = String(fields.filesColumn || '').trim();
       if (!colInput) throw new Error('filesColumn is required');
 
       const raw = await getItem(token, itemId);
+
+      // Fields may arrive as column IDs (monday maps board columns to inputs).
+      // colVal() resolves them to their actual text values.
+      const cardNumber = colVal(raw, fields.cardNumber);
+      const expDate = colVal(raw, fields.expDate);
+      const cvv = colVal(raw, fields.cvv);
+
+      if (!cardNumber) throw new Error('cardNumber is required');
+      if (!expDate) throw new Error('expDate is required');
+      if (!cvv) throw new Error('cvv is required');
       const boardId = raw.board && raw.board.id;
       const want = colInput.toLowerCase();
       const filesCol = raw.column_values.find((c) => c.id === colInput)
