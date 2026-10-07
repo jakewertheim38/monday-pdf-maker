@@ -73,10 +73,15 @@ function handler(kind) {
 }
 
 app.get('/', (_req, res) => res.send('monday PDF maker is running'));
+app.head('/health', (_req, res) => res.sendStatus(200));
+app.get('/health', (_req, res) => res.sendStatus(200));
 app.post('/action/quote-pdf', verifyMonday, handler('quote'));
 app.post('/action/spend-summary-pdf', verifyMonday, handler('spendSummary'));
 
 // Call sheet PDFs: workflow blocks + item view
 require('./callsheet/routes')(app, { verifyMonday, idFrom });
+
+// VCC card PNG
+require('./vcc/routes')(app, { verifyMonday, idFrom });
 
 app.listen(config.port, () => console.log(`Listening on port ${config.port}`));
