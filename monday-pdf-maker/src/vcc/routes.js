@@ -1,5 +1,5 @@
 // VCC card PNG workflow block.
-// Input fields: cardNumber, expDate, cvv, filesColumn (column id or title), itemId.
+// Input fields: name, actualExp, loaded, cardNumber, vccExp, cvv, filesColumn, itemId.
 // Output: { assetId } of the uploaded PNG.
 const { renderPng } = require('./template');
 const { uploadFile, clearFilesColumn, getItem, cellText } = require('../monday');
@@ -24,28 +24,27 @@ module.exports = function registerVcc(app, { verifyMonday, idFrom }) {
       if (!itemId) throw new Error('No itemId in action input fields');
       if (!token) throw new Error('No API token available');
 
-      // Resolve the Files column from the workflow input.
       const colInput = String(fields.filesColumn || '').trim();
       if (!colInput) throw new Error('filesColumn is required');
 
       const raw = await getItem(token, itemId);
 
-      // Fields may arrive as column IDs (monday maps board columns to inputs).
-      // colVal() resolves them to their actual text values.
+      const name       = colVal(raw, fields.name);
+      const actualExp  = colVal(raw, fields.actualExp);
+      const loaded     = colVal(raw, fields.loaded);
       const cardNumber = colVal(raw, fields.cardNumber);
-      const expDate = colVal(raw, fields.expDate);
-      const cvv = colVal(raw, fields.cvv);
+      const vccExp     = colVal(raw, fields.vccExp);
+      const cvv        = colVal(raw, fields.cvv);
 
       if (!cardNumber) throw new Error('cardNumber is required');
-      if (!expDate) throw new Error('expDate is required');
-      if (!cvv) throw new Error('cvv is required');
+
       const boardId = raw.board && raw.board.id;
       const want = colInput.toLowerCase();
       const filesCol = raw.column_values.find((c) => c.id === colInput)
         || raw.column_values.find((c) => c.type === 'file' && c.column && c.column.title.trim().toLowerCase() === want);
       if (!filesCol) throw new Error(`Files column "${colInput}" not found on this board`);
 
-      const png = await renderPng({ cardNumber, expDate, cvv });
+      const png = await renderPng({ name, actualExp, loaded, cardNumber, vccExp, cvv });
       const filename = `VCC-${cardNumber.replace(/\s+/g, '-')}.png`;
 
       await clearFilesColumn(token, boardId, itemId, filesCol.id);
