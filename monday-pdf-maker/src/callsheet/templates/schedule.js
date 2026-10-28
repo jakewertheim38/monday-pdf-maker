@@ -323,5 +323,7 @@ module.exports = async function build(item, subitems) {
   const dateForFilename = item.shootDate?.from || item.shootDate?.to || new Date().toISOString().split('T')[0];
   const formattedDate = dateForFilename.split('T')[0]; // Ensure YYYY-MM-DD format
 
-  return { docDefinition, filename: `Schedule_${item.name}_${formattedDate}.pdf` };
+  const productionId = item.productionId?.displayValue;
+  const idPart = productionId ? `_${productionId}` : '';
+  return { docDefinition, filename: `Schedule_${item.name}${idPart}_${formattedDate}.pdf` };
 };
